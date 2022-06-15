@@ -1,7 +1,3 @@
-# Table of contents
-
-[[_TOC_]]
-
 # Overview
 
 This library provides lightweight Order Book component.

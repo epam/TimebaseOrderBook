@@ -202,8 +202,6 @@ Samples can be found in the  [samples](./orderbook-sample/src/main/java/deltix/c
 
 # Performance Testing
 
-## QuoteFlow & OrderBook
-
 ### Preparation
 
 Measured on moderately sized developer's laptop. For run test see [***OrderBookIT***](./orderbook-it/src/main/java/deltix/common/orderbook/OrderBookIT.java#L101)

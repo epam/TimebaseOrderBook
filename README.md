@@ -17,7 +17,7 @@ Requirements:
 The first step is to include orderbook into your project, for example, as a Gradle compile dependency:
 
 ```
-implementation  com.epam.deltix:orderbook:x.x.x
+implementation  com.epam.deltix:timebase-orderbook:x.x.x
 ```
 
 (Please replace ***x*** with the latest version numbers: [Maven Central](https://search.maven.org/search?q=g:com.epam.deltix) )
@@ -239,24 +239,3 @@ Black hole                 |  ***1 977 046***   |  -
 SingleExchangeOrderBook    |  ***1 110 222***    |  ***62 272***
 ConsolidatedOrderBook      |  ***890 701***      |  ***67 024***
 AggregatedOrderBook        |  ***890 062***      |  ***125 024***
-
-# JMH Testing
-
-Benchmark   |                                                               (maxDepth)  |(numberOfExchange) | Mode|  Cnt  |      Score   |      Error  | Units
-| :-------- | :------| :------|:------|:------|:------|:------|:------|
-AggregateOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate            |   40                 |  1 | avgt |   5|       78.279 ±   |   36.302 | ns/op
-AggregateOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate            | 1000                 |  1 | avgt |   5|     1351.934 ±   |  281.880 | ns/op
-AggregateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                  |   40                 |  1 | avgt |   5|    13252.543 ±   | 7209.252 | ns/op
-AggregateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                  | 1000                 |  1 | avgt |   5|   459796.300 ±   |59046.169 | ns/op
-ConsolidateOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate          |   40                 |  6 | avgt |   5|      104.477 ±   |   19.124 | ns/op
-ConsolidateOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate          | 1000                 |  6 | avgt |   5|     1324.584 ±   |  260.085 | ns/op
-ConsolidateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                |   40                 |  1 | avgt |   5|     7792.618 ±   | 4552.744 | ns/op
-ConsolidateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                |   40                 |  3 | avgt |   5|     7471.870 ±   | 4380.074 | ns/op
-ConsolidateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                | 1000                 |  1 | avgt |   5|   418103.694 ±   |92534.192 | ns/op
-ConsolidateOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot                | 1000                 |  3 | avgt |   5|   415137.403 ±   |41683.346 | ns/op
-SingleExchangeOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate       |   40                 |  1 | avgt |   5|       34.301 ±   |    2.086 | ns/op
-SingleExchangeOrderBookIncrementalUpdateBenchmark.randomIncrementalUpdate       | 1000                 |  1 | avgt |   5|       31.913 ±   |    2.228 | ns/op
-SingleExchangeOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot             |   40                 |  1 | avgt |   5|      557.463 ±   |   40.765 | ns/op
-SingleExchangeOrderBookVendorSnapshotUpdateBenchmark.vendorSnapshot             | 1000                 |  1 | avgt |   5|    21802.551 ±   | 1302.110 | ns/op
-SingleOrderBookIteratorBenchmark.quoteIterator                                  |   40                 |  1 | avgt |   5|       71.537 ±   |    2.389 | ns/op
-SingleOrderBookIteratorBenchmark.quoteIterator                                  | 1000                 |  1 | avgt |   5|      840.213 ±   |  259.407 | ns/op

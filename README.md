@@ -14,10 +14,12 @@ Requirements:
 
 ***Step 1:*** Setting up the dependency.
 
-The first step is to include orderbook into your project, for example, as a Gradle compile dependency:
+The first step is to include `orderbook` into your project, for example, as a Gradle compile dependency:
 
 ```
-implementation  com.epam.deltix:timebase-orderbook:x.x.x
+dependencies {
+    implementation  com.epam.deltix:timebase-orderbook:x.x.x
+}
 ```
 
 (Please replace ***x*** with the latest version numbers: [Maven Central](https://search.maven.org/search?q=g:com.epam.deltix) )

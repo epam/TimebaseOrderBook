@@ -2,10 +2,11 @@
 
 # Garbage Free OrderBook
 
+[![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
+
 ![build](https://github.com/epam/TimebaseOrderBook/workflows/Continuous%20Integration/badge.svg?branch=main)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/epam/TimebaseOrderBook.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/epam/TimebaseOrderBook/alerts/)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/epam/TimebaseOrderBook.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/epam/TimebaseOrderBook/context:java)
-[![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
 
 # Overview
 

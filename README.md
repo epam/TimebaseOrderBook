@@ -4,8 +4,9 @@
 
 ![build](https://github.com/epam/TimebaseOrderBook/workflows/Continuous%20Integration/badge.svg?branch=main)
 
-[![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/epam/TimebaseOrderBook.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/epam/TimebaseOrderBook/alerts/)
 
+[![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
 
 # Overview
 

@@ -64,6 +64,9 @@ subprojects {
         doFirst {
             manifest.attributes 'Class-Path': configurations.runtimeClasspath.collect { it.name }.join(' ')
         }
+        from("$rootDir") {
+            include 'LICENSE'
+        }
     }
 
     test {

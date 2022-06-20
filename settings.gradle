@@ -1,0 +1,6 @@
+rootProject.name = 'orderbook'
+
+include 'orderbook-core'
+include 'orderbook-sample'
+include 'orderbook-benchmark'
+include 'orderbook-it'

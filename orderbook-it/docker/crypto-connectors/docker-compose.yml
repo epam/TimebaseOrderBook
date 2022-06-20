@@ -1,0 +1,18 @@
+version: '3.9'
+services:
+  crypto-conectors:
+    image: epam/timebase-crypto-connectors:0.1.8
+    ports:
+      - "8930:8930"
+    networks:
+      - deltix
+    environment:
+      JAVA_OPTS: '-Dtimebase.url=dxtick://timebase:8011  
+                  -Dspring.config.location=/config/application.yaml'
+    volumes:
+      - "./config:/config"
+
+networks:
+  deltix:
+    name: "deltix"
+    driver: bridge

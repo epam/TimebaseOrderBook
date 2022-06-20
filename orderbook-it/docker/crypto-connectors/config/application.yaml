@@ -1,0 +1,20 @@
+connectors:
+  coinbase:
+    stream: coinbase
+    depth: 20
+    wsUrl: wss://ws-feed.pro.coinbase.com
+    model:
+      - "L1"
+      - "L2"
+      - "TRADES"
+    instruments: "ETH-USD=ETH/USD,BTC-USD=BTC/USD,BTC-USDT=BTC/USDT,LTC-USD=LTC/USD"
+
+  bitmex:
+    stream: bitmex
+    wsUrl: wss://ws.bitmex.com/realtime
+    depth: 20
+    model:
+      - "L1"
+      - "L2"
+      - "TRADES"
+    instruments: "XBTUSD=BTC/USD,ETHUSD=ETH/USD"

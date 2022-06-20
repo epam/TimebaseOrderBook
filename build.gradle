@@ -1,0 +1,153 @@
+import java.text.SimpleDateFormat
+
+plugins {
+    id 'net.nemerosa.versioning' version '2.6.1'
+    id "me.champeau.jmh" version "0.6.6"
+}
+
+println "Running gradle version: $gradle.gradleVersion"
+
+description = "Timebase OrderBook"
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+
+    archivesBaseName = 'timebase' + path.replace(':', '-')
+
+    compileJava.options.encoding = 'UTF-8'
+    sourceCompatibility = 11
+    targetCompatibility = 11
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation("com.epam.deltix:timebase-messages:6.0.64")
+        implementation('com.epam.deltix:dfp:0.11.23')
+        implementation('com.epam.deltix:containers:3.1.2')
+
+        testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.1')
+        testImplementation('org.junit.jupiter:junit-jupiter-engine:5.7.1')
+        testImplementation('org.junit.jupiter:junit-jupiter-params:5.7.1')
+        testImplementation('org.mockito:mockito-core:4.0.0')
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        archiveClassifier.set('sources')
+        archiveBaseName.set(archivesBaseName)
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        archiveClassifier.set('javadoc')
+        archiveBaseName.set(archivesBaseName)
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    jar {
+        manifest.attributes 'Implementation-Title': 'OrderBook'
+        manifest.attributes 'Implementation-Version': archiveVersion
+        manifest.attributes 'Built-By': System.properties['user.name']
+        manifest.attributes 'Build-Revision': versioning.info.commit
+        manifest.attributes 'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date())
+        manifest.attributes 'Created-By': "Gradle ${gradle.gradleVersion}"
+        manifest.attributes 'Build-Jdk': "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})"
+        manifest.attributes 'Build-OS': "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+        doFirst {
+            manifest.attributes 'Class-Path': configurations.runtimeClasspath.collect { it.name }.join(' ')
+        }
+    }
+
+    test {
+        ignoreFailures Boolean.getBoolean("test.ignoreFailures")
+        reports.junitXml.required = true
+        reports.junitXml.outputPerTestCase = true
+
+        testLogging.exceptionFormat = "full"
+        testLogging.events "passed", "skipped", "failed", "standardOut", "standardError"
+        useJUnitPlatform()
+
+        doLast {
+            copy {
+                from reports.junitXml.outputLocation include { "*.xml" }
+                into file("$rootDir/build/reports/tests/xml")
+            }
+        }
+    }
+
+}
+
+project('orderbook-core') {
+
+}
+
+project('orderbook-sample') {
+    dependencies {
+        implementation project(path: ':orderbook-core')
+    }
+}
+
+project('orderbook-it') {
+    // TODO Add docker support
+
+    def timebaseVersion = '6.1.6'
+
+    def gflogVersion = '3.0.1'
+
+    def deltixCommonsUtilVersion = '6.0.63'
+
+    dependencies {
+        implementation("com.epam.deltix:gflog-api:$gflogVersion")
+        implementation("com.epam.deltix:gflog-core:$gflogVersion")
+        implementation("com.epam.deltix:gflog-jul:$gflogVersion")
+        implementation("com.epam.deltix:gflog-jcl:$gflogVersion")
+        implementation("com.epam.deltix:gflog-slf4j:$gflogVersion")
+
+        implementation("com.epam.deltix:timebase-util:$deltixCommonsUtilVersion")
+
+        implementation("org.finos.timebase-ce:timebase-client:${timebaseVersion}")
+
+        implementation project(':orderbook-core')
+
+        implementation fileTree(dir: 'libs', include: '*.jar')
+
+        implementation group: 'org.openjdk.jol', name: 'jol-core', version: '0.1'
+    }
+}
+
+project('orderbook-benchmark') {
+    apply plugin: 'me.champeau.jmh'
+
+    jmh {
+        jmhVersion = '1.33'
+        duplicateClassesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
+    jar {
+        manifest.attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
+
+    dependencies {
+        jmh('org.openjdk.jmh:jmh-core:0.9')
+        jmh('org.openjdk.jmh:jmh-generator-annprocess:0.9')
+
+        annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.33")
+        implementation("org.openjdk.jmh:jmh-core:1.33")
+
+        implementation("org.openjdk.jol:jol-core:0.1")
+
+        implementation project(':orderbook-core')
+    }
+}
+
+wrapper {
+    distributionType = Wrapper.DistributionType.BIN
+}

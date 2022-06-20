@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  timebase:
+    image: finos/timebase-ce-server:6.1.6
+    ports:
+      - "8011:8011"
+    networks:
+      - deltix
+    volumes:
+      - "timebase-home:/timebase-home/timebase"
+      - "timebase-home:/timebase-home/logs"
+
+  webadmin:
+    image: epam/timebase-ws-server:1.0.2
+    ports:
+      - "9099:8099"
+    networks:
+      - deltix
+    environment:
+      JAVA_OPTS: "-Dtimebase.url=dxtick://host.docker.internal:8011"
+
+volumes:
+  timebase-home:
+    name: orderbook-timebase-it
+
+networks:
+  deltix:
+    name: "deltix"
+    driver: bridge

@@ -22,7 +22,7 @@ The first step is to include `orderbook` into your project, for example, as a Gr
 
 ```
 dependencies {
-    implementation  com.epam.deltix:timebase-orderbook:x.x.x
+    implementation  com.epam.deltix:timebase-orderbook-core:x.x.x
 }
 ```
 

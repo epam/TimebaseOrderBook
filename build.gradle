@@ -5,6 +5,10 @@ plugins {
     id "me.champeau.jmh" version "0.6.6"
 }
 
+ext {
+    isReleaseVersion = !version.endsWith("SNAPSHOT")
+}
+
 println "Running gradle version: $gradle.gradleVersion"
 
 description = "Timebase OrderBook"
@@ -86,6 +90,70 @@ subprojects {
         }
     }
 
+    // Publishing to Maven Central
+
+    def rUser = findProperty('SONATYPE_NEXUS_USERNAME') ?:  System.getenv('SONATYPE_NEXUS_USERNAME') ?: "FakeUser"
+    def rPass = findProperty('SONATYPE_NEXUS_PASSWORD') ?:  System.getenv('SONATYPE_NEXUS_PASSWORD') ?: "FakePass"
+
+    publishing {
+        repositories {
+            maven {
+                url = findProperty('SONATYPE_REPOSITORY') ?: System.getenv('SONATYPE_REPOSITORY') ?: "FakeRepo"
+                credentials {
+                    username rUser
+                    password rPass
+                }
+            }
+        }
+
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+
+                pom {
+                    name = "TimebaseOrderBook"
+                    packaging = 'jar'
+                    description = 'High efficient garbage free orderbook for Java 11+'
+                    url = 'https://github.com/epam/TimebaseOrderBook.git'
+
+                    scm {
+                        connection = 'scm:git:https://github.com/epam/TimebaseOrderBook.git'
+                        developerConnection = 'scm:git:https://github.com/epam/TimebaseOrderBook.git'
+                        url = 'https://github.com/epam/TimebaseOrderBook.git'
+                    }
+
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'andriiostapenko'
+                            name = 'Andrii Ostapenko'
+                            email = 'Andrii_Ostapenko1@epam.com'
+                            url = 'https://github.com/GregGGregGreG'
+                            organization = 'EPAM Systems'
+                            organizationUrl = 'https://www.epam.com/'
+                        }
+                    }
+                }
+            }
+        }
+
+        signing {
+            def signingKey = findProperty('SIGNING_PRIVATE_KEY') ?: System.getenv('SIGNING_PRIVATE_KEY') ?: "FakeUser"
+            def signingPassword = findProperty('SIGNING_PASSWORD') ?: System.getenv('SIGNING_PASSWORD') ?: "FakePass"
+
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign publishing.publications.mavenJava
+
+            required { isReleaseVersion }
+        }
+    }
+
 }
 
 project('orderbook-core') {
@@ -149,6 +217,12 @@ project('orderbook-benchmark') {
 
         implementation project(':orderbook-core')
     }
+}
+
+def publishingProjects = subprojects - project('orderbook-benchmark') - project('orderbook-sample') - project('orderbook-it')
+task publishAll(dependsOn: publishingProjects.collect { it.path + ":publish" }) {
+    group 'publishing'
+    description 'Publish All Artifacts'
 }
 
 wrapper {

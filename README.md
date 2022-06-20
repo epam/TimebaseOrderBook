@@ -2,9 +2,10 @@
 
 # Garbage Free OrderBook
 
+![build](https://github.com/epam/TimebaseOrderBook/workflows/Continuous%20Integration/badge.svg?branch=main)
+
 [![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
 
-![CI](https://github.com/epam/TimebaseOrderBook/workflows/Continuous%20Integration/badge.svg?branch=main)
 
 # Overview
 

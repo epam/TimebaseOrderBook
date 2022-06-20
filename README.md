@@ -2,6 +2,8 @@
 
 [![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
 
+![Continuous Integration](https://github.com/epam/TimebaseOrderBook/workflows/Continuous%20Integration/badge.svg?branch=main)
+
 # Overview
 
 This library provides lightweight Order Book component.

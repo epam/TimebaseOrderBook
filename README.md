@@ -1,3 +1,7 @@
+# Garbage Free OrderBook
+
+[![GitHub](https://img.shields.io/badge/License-Apache--2.0-blue)](https://github.com/epam/TimebaseOrderBook/blob/main/LICENSE)
+
 # Overview
 
 This library provides lightweight Order Book component.

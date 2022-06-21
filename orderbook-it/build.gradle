@@ -1,0 +1,17 @@
+dependencies {
+    implementation("com.epam.deltix:gflog-api:3.0.1")
+    implementation("com.epam.deltix:gflog-core:3.0.1")
+    implementation("com.epam.deltix:gflog-jul:3.0.1")
+    implementation("com.epam.deltix:gflog-jcl:3.0.1")
+    implementation("com.epam.deltix:gflog-slf4j:3.0.1")
+
+    implementation("com.epam.deltix:timebase-util:6.0.63")
+
+    implementation("org.finos.timebase-ce:timebase-client:6.1.6")
+
+    implementation project(':orderbook-core')
+
+    implementation fileTree(dir: 'libs', include: '*.jar')
+
+    compileOnly group: 'org.openjdk.jol', name: 'jol-core', version: '0.1'
+}

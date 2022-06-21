@@ -168,7 +168,7 @@ subprojects {
     }
 }
 
-def publishingProjects = subprojects - project('orderbook-benchmark') - project('orderbook-sample') - project('orderbook-it')
+def publishingProjects = project('orderbook-core')
 task publishAll(dependsOn: publishingProjects.collect { it.path + ":publish" }) {
     group 'publishing'
     description 'Publish All Artifacts'

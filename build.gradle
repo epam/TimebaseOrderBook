@@ -14,19 +14,12 @@ println "Running gradle version: $gradle.gradleVersion"
 
 description = "Timebase OrderBook"
 
-licenseReport {
-    excludeGroups = []
-    excludes = ['com.sun.codemodel:codemodel-project', 'com.fasterxml.jackson:jackson-bom']
-
-    configurations = ['runtimeClasspath']
-    allowedLicensesFile = new File("$rootDir/allowed-lic.json")
-}
-
 subprojects {
     apply plugin: 'java'
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
+    apply plugin: "com.github.jk1.dependency-license-report"
 
     archivesBaseName = 'timebase' + path.replace(':', '-')
 
@@ -100,6 +93,16 @@ subprojects {
         }
     }
 
+    // License report extension
+
+    licenseReport {
+        excludeGroups = []
+        excludes = ['com.sun.codemodel:codemodel-project', 'com.fasterxml.jackson:jackson-bom']
+
+        configurations = ['runtimeClasspath']
+        allowedLicensesFile = new File("$rootDir/allowed-licenses.json")
+    }
+
     // Publishing to Maven Central
 
     def rUser = findProperty('SONATYPE_NEXUS_USERNAME') ?:  System.getenv('SONATYPE_NEXUS_USERNAME') ?: "FakeUser"
@@ -165,77 +168,19 @@ subprojects {
     }
 }
 
-project('orderbook-core') {
-
-}
-
-project('orderbook-sample') {
-    dependencies {
-        implementation project(path: ':orderbook-core')
-    }
-}
-
-project('orderbook-it') {
-    // TODO Add docker support
-
-    def timebaseVersion = '6.1.6'
-
-    def gflogVersion = '3.0.1'
-
-    def deltixCommonsUtilVersion = '6.0.63'
-
-    dependencies {
-        implementation("com.epam.deltix:gflog-api:$gflogVersion")
-        implementation("com.epam.deltix:gflog-core:$gflogVersion")
-        implementation("com.epam.deltix:gflog-jul:$gflogVersion")
-        implementation("com.epam.deltix:gflog-jcl:$gflogVersion")
-        implementation("com.epam.deltix:gflog-slf4j:$gflogVersion")
-
-        implementation("com.epam.deltix:timebase-util:$deltixCommonsUtilVersion")
-
-        implementation("org.finos.timebase-ce:timebase-client:${timebaseVersion}")
-
-        implementation project(':orderbook-core')
-
-        implementation fileTree(dir: 'libs', include: '*.jar')
-
-        implementation group: 'org.openjdk.jol', name: 'jol-core', version: '0.1'
-    }
-}
-
-project('orderbook-benchmark') {
-    apply plugin: 'me.champeau.jmh'
-
-    jmh {
-        jmhVersion = '1.33'
-        duplicateClassesStrategy = DuplicatesStrategy.EXCLUDE
-    }
-
-    jar {
-        manifest.attributes 'Main-Class': 'org.openjdk.jmh.Main'
-    }
-
-    dependencies {
-        jmh('org.openjdk.jmh:jmh-core:0.9')
-        jmh('org.openjdk.jmh:jmh-generator-annprocess:0.9')
-
-        annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.33")
-        implementation("org.openjdk.jmh:jmh-core:1.33")
-
-        implementation("org.openjdk.jol:jol-core:0.1")
-
-        implementation project(':orderbook-core')
-    }
-}
-
 def publishingProjects = subprojects - project('orderbook-benchmark') - project('orderbook-sample') - project('orderbook-it')
 task publishAll(dependsOn: publishingProjects.collect { it.path + ":publish" }) {
     group 'publishing'
     description 'Publish All Artifacts'
 }
 
+task checkLicenseAll(dependsOn: publishingProjects.collect { it.path + ":checkLicense" }) {
+    group 'checking'
+    description 'Check License All Artifacts'
+}
+
 wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-build.dependsOn checkLicense
+build.dependsOn checkLicenseAll

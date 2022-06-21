@@ -3,6 +3,7 @@ import java.text.SimpleDateFormat
 plugins {
     id 'net.nemerosa.versioning' version '2.6.1'
     id "me.champeau.jmh" version "0.6.6"
+    id 'com.github.jk1.dependency-license-report' version '2.0'
 }
 
 ext {
@@ -12,6 +13,14 @@ ext {
 println "Running gradle version: $gradle.gradleVersion"
 
 description = "Timebase OrderBook"
+
+licenseReport {
+    excludeGroups = []
+    excludes = ['com.sun.codemodel:codemodel-project', 'com.fasterxml.jackson:jackson-bom']
+
+    configurations = ['runtimeClasspath']
+    allowedLicensesFile = new File("$rootDir/allowed-lic.json")
+}
 
 subprojects {
     apply plugin: 'java'
@@ -228,3 +237,5 @@ task publishAll(dependsOn: publishingProjects.collect { it.path + ":publish" }) 
 wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
+
+build.dependsOn checkLicense

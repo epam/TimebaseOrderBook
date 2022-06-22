@@ -1,3 +1,5 @@
+description = "Order Samples"
+
 dependencies {
-    implementation project(path: ':orderbook-core')
+    implementation(project(":orderbook-core"))
 }

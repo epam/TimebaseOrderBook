@@ -1,0 +1,10 @@
+dependencies {
+    api('com.epam.deltix:timebase-messages')
+    api('com.epam.deltix:containers')
+    api('com.epam.deltix:dfp')
+
+    testImplementation('org.mockito:mockito-core')
+    testImplementation('org.junit.jupiter:junit-jupiter-api')
+    testImplementation('org.junit.jupiter:junit-jupiter-engine')
+    testImplementation('org.junit.jupiter:junit-jupiter-params')
+}

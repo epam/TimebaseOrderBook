@@ -19,7 +19,6 @@ package com.epam.deltix.timebase.orderbook.impl;
 import com.epam.deltix.containers.AlphanumericUtils;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import com.epam.deltix.timebase.orderbook.api.MarketSide;
-import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -30,7 +29,6 @@ import java.util.StringJoiner;
 public class MutableExchangeImpl<Quote, Processor extends QuoteProcessor<Quote>>
         implements MutableExchange<Quote, Processor> {
 
-    @Alphanumeric
     private final long exchangeId;
     private final Processor processor;
 

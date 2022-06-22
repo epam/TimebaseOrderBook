@@ -1,10 +1,11 @@
 import java.text.SimpleDateFormat
 
 plugins {
-    id 'net.nemerosa.versioning' version '2.6.1'
+    id 'checkstyle'
     id "me.champeau.jmh" version "0.6.6"
     id 'com.github.jk1.dependency-license-report' version '2.0'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'net.nemerosa.versioning' version '2.6.1'
 }
 
 ext {
@@ -19,6 +20,7 @@ configure(allprojects) {
     apply plugin: 'java'
     apply plugin: 'java-library'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'checkstyle'
 
     archivesBaseName = 'timebase' + path.replace(':', '-')
 
@@ -33,7 +35,7 @@ configure(allprojects) {
         }
         dependencies {
             dependencySet(group: 'com.epam.deltix', version: "${commonsVersion}") {
-                entry('timebase-messages'){
+                entry('timebase-messages') {
                     exclude group: "org.apache.commons", name: "commons-lang"
                     exclude group: "com.epam.deltix", name: "containers"
                     exclude group: "com.epam.deltix", name: "hd-date-time"
@@ -42,28 +44,20 @@ configure(allprojects) {
                     exclude group: "com.epam.deltix", name: "dfp"
                 }
             }
-
             dependency("com.epam.deltix:dfp:${dfpVersion}");
-
-            dependency("com.epam.deltix:containers:${containerVersion}"){
+            dependency("com.epam.deltix:containers:${containerVersion}") {
                 exclude group: "junit", name: "junit"
                 exclude group: "com.epam.deltix", name: "dfp"
                 exclude group: "com.epam.deltix", name: "hd-date-time"
             }
-
             dependencySet(group: 'com.epam.deltix', version: "${gflogVersion}") {
                 entry "gflog-api"
                 entry "gflog-core"
             }
-
             dependency("org.finos.timebase-ce:timebase-client:${timebaseVersion}")
-
             dependency('org.openjdk.jol:jol-core:0.1')
         }
 
-        resolutionStrategy {
-            cacheChangingModulesFor 0, "seconds"
-        }
         repositories {
             mavenCentral()
         }
@@ -101,6 +95,10 @@ configure(allprojects) {
         }
     }
 
+    checkstyle {
+        toolVersion = "10.3"
+        ignoreFailures = true// TODO Temp solution!
+    }
 }
 
 configure(publishingProjects) {
@@ -210,6 +208,14 @@ task publishAll(dependsOn: publishingProjects.collect { it.path + ":publish" }) 
 task checkLicenseAll(dependsOn: publishingProjects.collect { it.path + ":checkLicense" }) {
     group 'checking'
     description 'Check License All Artifacts'
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.required = false
+        html.required = true
+        html.stylesheet resources.text.fromFile('config/checkstyle.xsl')
+    }
 }
 
 wrapper {

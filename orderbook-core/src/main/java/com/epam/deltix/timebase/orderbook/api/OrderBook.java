@@ -24,9 +24,6 @@ import com.epam.deltix.timebase.orderbook.options.Option;
 /**
  * Order book for processing universal market data format that included in package (Package Header).
  *
- * <p>
- * <img width="1563" height="618" src="https://gitlab.deltixhub.com/Deltix/Common/orderbook/-/wikis/uploads/49649bd58c6c3e13d78902c55a8b35e1/orderBookUniversalFormat.png" alt="">
- * <p>
  * Market Data Format (also called "Universal format") is influenced by FIX Protocol and native APIs
  * of various trading systems that we have previously worked with. It is designed to provide high-level normalized
  * format suitable to capture data from majority of very different trading venues.

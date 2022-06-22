@@ -1,22 +1,20 @@
+description = "OrderBook Bencmark"
+
 apply plugin: 'me.champeau.jmh'
 
+ext {
+    jmhVersion = 1.35
+}
+
 jmh {
-    jmhVersion = '1.33'
     duplicateClassesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-jar {
-    manifest.attributes 'Main-Class': 'org.openjdk.jmh.Main'
-}
-
 dependencies {
-    jmh('org.openjdk.jmh:jmh-core:0.9')
-    jmh('org.openjdk.jmh:jmh-generator-annprocess:0.9')
-
-    annotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.33")
-    implementation("org.openjdk.jmh:jmh-core:1.33")
-
-    implementation("org.openjdk.jol:jol-core:0.1")
-
-    implementation project(':orderbook-core')
+    jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}")
+    jmh("org.openjdk.jmh:jmh-core:${jmhVersion}")
+    jmh("org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}")
+    jmh("org.openjdk.jmh:jmh-generator-bytecode:${jmhVersion}")
+    jmh(project(':orderbook-core'))
+    jmh("org.openjdk.jol:jol-core")
 }

@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.timebase.orderbook.api;
 
+import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 
 import java.util.Iterator;
@@ -61,6 +62,19 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
      * @return depth of market
      */
     int depth();
+
+    /**
+     * The total number of positions (orders size) being bought/sold.
+     * <p>
+     * Return Decimal64Utils#ZERO if market side is empty.
+     *
+     * @return total trade quantity
+     * @see com.epam.deltix.dfp.Decimal
+     * @see com.epam.deltix.dfp.Decimal64Utils#ZERO
+     * @see com.epam.deltix.timebase.messages.universal.BasePriceEntry#setSize(long)
+     */
+    @Decimal
+    long getTotalQuantity();
 
     /**
      * Returns true if this market side contains no elements.

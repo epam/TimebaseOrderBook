@@ -28,6 +28,8 @@ import com.epam.deltix.timebase.orderbook.options.OrderBookOptions;
 import com.epam.deltix.util.collections.generated.ObjectArrayList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.Iterator;
@@ -54,9 +56,15 @@ public abstract class AbstractOrderBookTest {
     public abstract void createBook(OrderBookOptions otherOpt);
 
     @Test
-    public void L1Quote_symbol_NotEmpty() {
+    public void symbol_NotEmpty() {
         Assertions.assertTrue(getBook().getSymbol().hasValue());
         Assertions.assertEquals(DEFAULT_SYMBOL, getBook().getSymbol().get());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = QuoteSide.class)
+    public void marketSide_getTotalQuantity_zero(final QuoteSide side) {
+        assertTotalQuantity(side, Decimal64Utils.ZERO);
     }
 
     // Assertion
@@ -101,6 +109,16 @@ public abstract class AbstractOrderBookTest {
                 "Invalid Size!" +
                         " Expected :" + Decimal64Utils.toString(expectedSize) +
                         " Actual :" + Decimal64Utils.toString(quote.getSize()));
+    }
+
+    public void assertTotalQuantity(final QuoteSide side,
+                                    @Decimal final long expectedTotalQuantity) {
+
+        @Decimal final long totalQuantity = getBook().getMarketSide(side).getTotalQuantity();
+        Assertions.assertTrue(Decimal64Utils.isEqual(expectedTotalQuantity, totalQuantity),
+                "Invalid total quantity!" +
+                        " Expected :" + Decimal64Utils.toString(expectedTotalQuantity) +
+                        " Actual :" + Decimal64Utils.toString(totalQuantity));
     }
 
     public void assertPrice(final QuoteSide side,

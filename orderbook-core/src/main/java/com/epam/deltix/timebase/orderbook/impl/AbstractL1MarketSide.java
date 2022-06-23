@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.timebase.orderbook.impl;
 
+import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import com.epam.deltix.timebase.orderbook.api.OrderBookQuote;
 
@@ -47,6 +48,14 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     @Override
     public Quote getQuote(final int level) {
         return !isEmpty() && level == 0 ? getBestQuote() : null;
+    }
+
+    @Override
+    public long getTotalQuantity() {
+        if (Objects.nonNull(quote)) {
+            return quote.getSize();
+        }
+        return Decimal64Utils.ZERO;
     }
 
     @Override

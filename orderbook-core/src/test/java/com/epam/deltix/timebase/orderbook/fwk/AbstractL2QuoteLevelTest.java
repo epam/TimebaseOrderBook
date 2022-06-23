@@ -140,6 +140,23 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
     }
 
     @ParameterizedTest
+    @EnumSource(value = PackageType.class,
+            mode = EnumSource.Mode.INCLUDE,
+            names = {"VENDOR_SNAPSHOT", "PERIODICAL_SNAPSHOT"})
+    public void snapshot_L2Quote_base_totalQuantity(final PackageType packageType) {
+        final int maxDepth = 10;
+        final int bbo = 25;
+        final int size = 5;
+        final int numberOfOrders = 25;
+
+        @Decimal long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
+
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
+        assertTotalQuantity(QuoteSide.BID, expectedTotalQuantity);
+        assertTotalQuantity(QuoteSide.ASK, expectedTotalQuantity);
+    }
+
+    @ParameterizedTest
     @MethodSource("quoteProvider")
     public void incrementUpdate_RandomDelete_InsertLast_L2Quote(final int maxExchangeDepth,
                                                                 final int bbo,

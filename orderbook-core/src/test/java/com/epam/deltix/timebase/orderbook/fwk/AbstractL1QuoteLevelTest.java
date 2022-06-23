@@ -17,6 +17,7 @@
 package com.epam.deltix.timebase.orderbook.fwk;
 
 import com.epam.deltix.dfp.Decimal;
+import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.timebase.messages.universal.PackageType;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import com.epam.deltix.timebase.orderbook.options.OrderBookOptions;
@@ -65,6 +66,23 @@ public abstract class AbstractL1QuoteLevelTest extends AbstractOrderBookTest {
         simulateL1QuoteSnapshot(packageType, COINBASE, bbo, size, numOfOrders);
         assertBookSize(QuoteSide.BID, maxDepth);
         assertBookSize(QuoteSide.ASK, maxDepth);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PackageType.class,
+            mode = EnumSource.Mode.INCLUDE,
+            names = {"VENDOR_SNAPSHOT", "PERIODICAL_SNAPSHOT"})
+    public void snapshot_L1Quote_base_totalQuantity(final PackageType packageType) {
+        final int maxDepth = 1;
+        final int bbo = 25;
+        final int size = 5;
+        final int numOfOrders = 25;
+
+        @Decimal long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
+        simulateL1QuoteSnapshot(packageType, COINBASE, bbo, size, numOfOrders);
+
+        assertTotalQuantity(QuoteSide.BID, expectedTotalQuantity);
+        assertTotalQuantity(QuoteSide.ASK, expectedTotalQuantity);
     }
 
     @ParameterizedTest

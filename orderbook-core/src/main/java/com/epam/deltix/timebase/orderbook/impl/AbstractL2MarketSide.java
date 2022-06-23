@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.timebase.orderbook.impl;
 
+import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import com.epam.deltix.timebase.orderbook.api.MarketSide;
@@ -55,6 +56,17 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
         return data.size();
     }
 
+    //TODO Add configuration parameter for type of calculating total quantity
+    @Override
+    public long getTotalQuantity() {
+        @Decimal
+        long result = Decimal64Utils.ZERO;
+        for (int i = 0; i < data.size(); i++) {
+            result = Decimal64Utils.add(result, data.get(i).getSize());
+        }
+        return result;
+    }
+
     @Override
     public void clear() {
         data.clear();
@@ -67,7 +79,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote getQuote(final int level) {
-        return data.get(level);
+        return data.get(level); // TODO NPE
     }
 
     @Override
@@ -227,7 +239,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote getBestQuote() {
-        return data.get(0);
+        return data.get(0); // TODO NPE
     }
 
     @Override

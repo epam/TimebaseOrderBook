@@ -244,10 +244,11 @@ public abstract class AbstractOrderBookTest {
                                     @Decimal final long price,
                                     @Decimal final long size,
                                     final long numOfOrders) {
-        return simulateL1Insert(DEFAULT_SYMBOL, side, price, size, numOfOrders);
+        return simulateL1Insert(DEFAULT_SYMBOL, DEFAULT_EXCHANGE_ID, side, price, size, numOfOrders);
     }
 
     public boolean simulateL1Insert(final String symbol,
+                                    final long exchangeId,
                                     final QuoteSide side,
                                     @Decimal final long price,
                                     @Decimal final long size,
@@ -257,6 +258,7 @@ public abstract class AbstractOrderBookTest {
                         .setSide(side)
                         .setPrice(price)
                         .setSize(size)
+                        .setExchangeId(exchangeId)
                         .setNumberOfOrders(numOfOrders)
                         .build(),
                 symbol, getBook());
@@ -465,6 +467,14 @@ public abstract class AbstractOrderBookTest {
 
         getBook().update(packageHeader);
         return packageHeader;
+    }
+
+    public PackageHeader simulateL1QuoteSnapshot(final PackageType packageType,
+                                                 final long bestBidAndAsk,
+                                                 final long size,
+                                                 final long numberOfOrders) {
+
+        return this.simulateL1QuoteSnapshot(packageType, DEFAULT_EXCHANGE_ID, bestBidAndAsk, size, numberOfOrders);
     }
 
     public PackageHeader createBookResetEntry(final PackageType packageType, final long exchangeId) {

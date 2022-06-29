@@ -108,9 +108,9 @@ public abstract class AbstractL1QuoteLevelTest extends AbstractOrderBookTest {
                                                                @Decimal final long price,
                                                                @Decimal final long size,
                                                                final long numberOfOrders) {
-        Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, side, price, size, numberOfOrders));
+        Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, BINANCE, side, price, size, numberOfOrders));
         simulateL1QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
-        Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, side, price, size, numberOfOrders));
+        Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, BINANCE, side, price, size, numberOfOrders));
     }
 
 }

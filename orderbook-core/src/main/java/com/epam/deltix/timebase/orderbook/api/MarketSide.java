@@ -44,7 +44,7 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
     /**
      * Get best quote.
      *
-     * @return Best quote from side.
+     * @return Best quote from side or null if quote not found
      */
     Quote getBestQuote();
 
@@ -52,7 +52,7 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
      * Get quote by level.
      *
      * @param level - level to use
-     * @return quote.
+     * @return quote or null if quote not found
      */
     Quote getQuote(int level);
 

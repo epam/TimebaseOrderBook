@@ -93,7 +93,7 @@ public class L1SingleExchangeOrderBookTest extends AbstractL1QuoteLevelTest {
                                                  @Decimal final long price,
                                                  @Decimal final long size,
                                                  final long numOfOrders) {
-        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numOfOrders);
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, bbo, size, numOfOrders);
         simulateL1Insert(side, price, size, numOfOrders);
 
         assertBookSize(side, 1);

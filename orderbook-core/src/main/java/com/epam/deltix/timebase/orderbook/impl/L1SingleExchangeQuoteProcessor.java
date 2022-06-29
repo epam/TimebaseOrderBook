@@ -116,8 +116,15 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
             final BaseEntryInfo pck = entries.get(i);
             final L1EntryInfo l1EntryInfo = (L1EntryInfo) pck;
             final QuoteSide side = l1EntryInfo.getSide();
+            final long exchangeId = l1EntryInfo.getExchangeId();
 
-            final L1MarketSide<Quote> marketSide = getMarketSide(side);
+            final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+            if (!exchange.hasValue()){
+                // TODO Log error and throw exception or add package validation
+                continue;
+            }
+
+            final L1MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
 
             final Quote quote;
             if (marketSide.isEmpty()) {

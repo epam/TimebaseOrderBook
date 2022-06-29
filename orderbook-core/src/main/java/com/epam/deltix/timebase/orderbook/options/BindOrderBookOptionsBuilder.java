@@ -43,7 +43,8 @@ public interface BindOrderBookOptionsBuilder {
      * Stock symbol to use.
      * <p>
      * This stock symbol is used to check all input packets before processing.
-     * If you are sure that your market data contains data for only one stock symbol, you may not set this option.
+     * If you are sure that your market data contains data for only one stock symbol, you may not set this option
+     * and skip validation for symbol per each package during update order book.
      *
      * @param symbol to use
      * @return builder

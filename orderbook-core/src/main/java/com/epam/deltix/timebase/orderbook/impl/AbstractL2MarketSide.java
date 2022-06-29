@@ -79,7 +79,10 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote getQuote(final int level) {
-        return data.get(level); // TODO NPE
+        if (!hasLevel((short) level)) {
+            return null;
+        }
+        return data.get(level);
     }
 
     @Override
@@ -99,6 +102,9 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote remove(final int level) {
+        if (!hasLevel((short) level)) {
+            return null;
+        }
         return data.remove(level);
     }
 
@@ -239,7 +245,10 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote getBestQuote() {
-        return data.get(0); // TODO NPE
+        if (isEmpty()) {
+            return null;
+        }
+        return data.get(0);
     }
 
     @Override

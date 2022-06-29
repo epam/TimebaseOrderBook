@@ -155,6 +155,15 @@ configure(publishingProjects) {
             mavenJava(MavenPublication) {
                 from components.java
 
+                versionMapping {
+                    usage(Usage.JAVA_RUNTIME) {
+                        fromResolutionResult()
+                    }
+                    usage(Usage.JAVA_API) {
+                        fromResolutionResult()
+                    }
+                }
+
                 pom {
                     name = "TimebaseOrderBook"
                     packaging = 'jar'

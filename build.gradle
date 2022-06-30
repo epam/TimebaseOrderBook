@@ -154,6 +154,7 @@ configure(publishingProjects) {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
+                artifactId = archivesBaseName
 
                 versionMapping {
                     usage(Usage.JAVA_RUNTIME) {

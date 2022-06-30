@@ -120,9 +120,9 @@ configure(publishingProjects) {
         from javadoc.destinationDir
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
+    java {
+        withJavadocJar()
+        withSourcesJar()
     }
 
     // License report extension

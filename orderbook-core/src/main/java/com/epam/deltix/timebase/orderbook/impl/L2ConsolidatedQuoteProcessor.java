@@ -29,12 +29,12 @@ import java.util.StringJoiner;
  */
 class L2ConsolidatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends AbstractL2MultiExchangeProcessor<Quote> {
 
-    public L2ConsolidatedQuoteProcessor(final int initialExchangeCount,
-                                        final int initialDepth,
-                                        final int maxDepth,
-                                        final ObjectPool<Quote> pool,
-                                        final GapMode gapMode,
-                                        final UpdateMode updateMode) {
+    L2ConsolidatedQuoteProcessor(final int initialExchangeCount,
+                                 final int initialDepth,
+                                 final int maxDepth,
+                                 final ObjectPool<Quote> pool,
+                                 final GapMode gapMode,
+                                 final UpdateMode updateMode) {
         super(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode);
     }
 
@@ -52,7 +52,7 @@ class L2ConsolidatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends 
     public void clear() {
         asks.clear();
         bids.clear();
-        for (MutableExchange<Quote, L2Processor<Quote>> exchange : this.getExchanges()) {
+        for (final MutableExchange<Quote, L2Processor<Quote>> exchange : this.getExchanges()) {
             exchange.getProcessor().clear();
         }
     }
@@ -61,16 +61,16 @@ class L2ConsolidatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends 
     public boolean removeQuote(final Quote remove, final L2MarketSide<Quote> marketSide) {
         final short level = marketSide.binarySearchLevelByPrice(remove);
         if (level != L2MarketSide.NOT_FOUND) {
-            if (remove.getExchangeId() == marketSide.getQuote(level).getExchangeId()
-                    && Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(level).getPrice())) {
+            if (remove.getExchangeId() == marketSide.getQuote(level).getExchangeId() &&
+                    Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(level).getPrice())) {
                 marketSide.remove(level);
                 return true;
             } else {
                 final int size = exchanges.size();
                 for (int i = 0, k = level + i; i < size; i++, k = level + i) {
                     if (marketSide.hasLevel((short) (k))) {
-                        if (remove.getExchangeId() == marketSide.getQuote(k).getExchangeId()
-                                && Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(k).getPrice())) {
+                        if (remove.getExchangeId() == marketSide.getQuote(k).getExchangeId() &&
+                                Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(k).getPrice())) {
                             marketSide.remove(k);
                             return true;
                         }
@@ -79,8 +79,8 @@ class L2ConsolidatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends 
 
                 for (int i = 0, k = level - i; i < size; i++, k = level - i) {
                     if (marketSide.hasLevel((short) (k))) {
-                        if (remove.getExchangeId() == marketSide.getQuote(k).getExchangeId()
-                                && Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(k).getPrice())) {
+                        if (remove.getExchangeId() == marketSide.getQuote(k).getExchangeId() &&
+                                Decimal64Utils.equals(remove.getPrice(), marketSide.getQuote(k).getPrice())) {
                             marketSide.remove(k);
                             return true;
                         }

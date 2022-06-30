@@ -20,18 +20,15 @@ import com.epam.deltix.timebase.messages.universal.DataModelType;
 
 public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookOptionsBuilder {
 
-    //@formatter:off
-    // TimeBase code style!
-    private Option<DataModelType>     quoteLevels                 = Option.empty();
-    private Option<OrderBookType>     bookType                    = Option.empty();
-    private Option<UpdateMode>        updateMode                  = Option.empty();
-    private Option<GapMode>           gapMode                     = Option.empty();
-    private Option<String>            symbol                      = Option.empty();
-    private Option<Integer>           initialDepth                = Option.empty();
-    private Option<Integer>           maxDepth                    = Option.empty();
-    private Option<Integer>           initialExchangesPoolSize    = Option.empty();
-    private Option<OrderBookOptions>  otherOptions                = Option.empty();
-    //@formatter:on
+    private Option<DataModelType> quoteLevels = Option.empty();
+    private Option<OrderBookType> bookType = Option.empty();
+    private Option<UpdateMode> updateMode = Option.empty();
+    private Option<GapMode> gapMode = Option.empty();
+    private Option<String> symbol = Option.empty();
+    private Option<Integer> initialDepth = Option.empty();
+    private Option<Integer> maxDepth = Option.empty();
+    private Option<Integer> initialExchangesPoolSize = Option.empty();
+    private Option<OrderBookOptions> otherOptions = Option.empty();
 
     @Override
     public BindOrderBookOptionsBuilder parent(final OrderBookOptions other) {

@@ -38,8 +38,8 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     // This parameter is used to understand whether the side is full or not.
     private short depthLimit;
 
-    public AbstractL2MarketSide(final int initialCapacity,
-                                final short maxDepth) {
+    AbstractL2MarketSide(final int initialCapacity,
+                         final short maxDepth) {
         this.maxDepth = maxDepth;
         this.depthLimit = maxDepth;
         this.data = new ArrayList<>(initialCapacity);
@@ -91,7 +91,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     }
 
     @Override
-    public void addLast(Quote insert) {
+    public void addLast(final Quote insert) {
         data.add(insert);
     }
 
@@ -131,18 +131,18 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 //            }
 //        }
         while (low <= high) {
-            int mid = (low + high) >>> 1;
+            final int mid = (low + high) >>> 1;
             quote = data.get(mid);
 
-            int cmp = quote.compareTo(find);
+            final int cmp = quote.compareTo(find);
 
-            if (cmp < 0)
+            if (cmp < 0) {
                 if (getSide() == QuoteSide.BID) {
                     high = mid - 1;
                 } else {
                     low = mid + 1;
                 }
-            else if (cmp > 0) {
+            } else if (cmp > 0) {
                 if (getSide() == QuoteSide.BID) {
                     low = mid + 1;
                 } else {
@@ -178,18 +178,18 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 //            }
 //        }
         while (low <= high) {
-            int mid = (low + high) >>> 1;
+            final int mid = (low + high) >>> 1;
             quote = data.get(mid);
 
-            int cmp = quote.compareTo(find);
+            final int cmp = quote.compareTo(find);
 
-            if (cmp < 0)
+            if (cmp < 0) {
                 if (getSide() == QuoteSide.BID) {
                     high = mid - 1;
                 } else {
                     low = mid + 1;
                 }
-            else if (cmp > 0) {
+            } else if (cmp > 0) {
                 if (getSide() == QuoteSide.BID) {
                     low = mid + 1;
                 } else {
@@ -269,7 +269,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     /**
      * An adapter to safely externalize the value iterator.
      */
-    final static class ReusableIterator<Quote> implements Iterator<Quote> {
+    static final class ReusableIterator<Quote> implements Iterator<Quote> {
 
         /**
          * Index of element to be returned by subsequent call to next.
@@ -312,7 +312,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     static class ASK<Quote extends MutableOrderBookQuote> extends AbstractL2MarketSide<Quote> {
 
-        public ASK(final int initialCapacity, final short maxDepth) {
+        ASK(final int initialCapacity, final short maxDepth) {
             super(initialCapacity, maxDepth);
         }
 
@@ -325,7 +325,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     static class BID<Quote extends MutableOrderBookQuote> extends AbstractL2MarketSide<Quote> {
 
-        public BID(final int initialDepth, final short maxDepth) {
+        BID(final int initialDepth, final short maxDepth) {
             super(initialDepth, maxDepth);
         }
 

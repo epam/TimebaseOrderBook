@@ -35,6 +35,14 @@ public class L2OrderBookFactory {
 
     /**
      * Creates OrderBook for single exchange market feed of given initial depth
+     *
+     * @param symbol       - type of symbol
+     * @param initialDepth - initial book depth
+     * @param maxDepth     - max order book depth
+     * @param gapMode      - skipped levels mode
+     * @param updateMode   - modes of order book update.
+     * @param <Quote>      - type of quote
+     * @return instance of OrderBook for single exchange
      */
     public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final Option<String> symbol,
                                                                                         final int initialDepth,
@@ -50,6 +58,15 @@ public class L2OrderBookFactory {
     /**
      * Creates OrderBook for market feed from multiple exchanges of given maximum depth.
      * Consolidated book preserve information about quote's exchange.
+     *
+     * @param symbol               - type of symbol\
+     * @param initialExchangeCount - initial pool size for stock exchanges
+     * @param initialDepth         - initial book depth
+     * @param maxDepth             - max order book depth
+     * @param gapMode              - skipped levels mode
+     * @param updateMode           - modes of order book update.
+     * @param <Quote>              - type of quote
+     * @return instance of Order Book with multiple exchanges
      */
     public static <Quote extends OrderBookQuote> OrderBook<Quote> newConsolidatedBook(final Option<String> symbol,
                                                                                       final int initialExchangeCount,
@@ -66,6 +83,15 @@ public class L2OrderBookFactory {
     /**
      * Creates OrderBook for market feed from multiple exchanges of given maximum depth.
      * Aggregated order book groups quotes from multiple exchanges by price.
+     *
+     * @param symbol               - type of symbol\
+     * @param initialExchangeCount - initial pool size for stock exchanges
+     * @param initialDepth         - initial book depth
+     * @param maxDepth             - max order book depth
+     * @param gapMode              - skipped levels mode
+     * @param updateMode           - modes of order book update.
+     * @param <Quote>              - type of quote
+     * @return instance of Order Book with multiple exchanges
      */
     public static <Quote extends OrderBookQuote> OrderBook<Quote> newAggregatedBook(final Option<String> symbol,
                                                                                     final int initialExchangeCount,

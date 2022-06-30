@@ -43,8 +43,8 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
      */
     private boolean isWaitingForSnapshot = false;
 
-    public L1SingleExchangeQuoteProcessor(final ObjectPool<Quote> pool,
-                                          final UpdateMode updateMode) {
+    L1SingleExchangeQuoteProcessor(final ObjectPool<Quote> pool,
+                                   final UpdateMode updateMode) {
         this.pool = pool;
         this.updateMode = updateMode;
         this.asks = L1MarketSide.factory(QuoteSide.ASK);
@@ -78,7 +78,8 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
         final long exchangeId = l1EntryNewInfo.getExchangeId();
         final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
         if (!exchange.hasValue()) {
-            return null;// TODO add null check
+            // TODO add null check
+            return null;
         }
 
         if (exchange.get().getProcessor().isWaitingForSnapshot()) {
@@ -119,7 +120,7 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
             final long exchangeId = l1EntryInfo.getExchangeId();
 
             final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
-            if (!exchange.hasValue()){
+            if (!exchange.hasValue()) {
                 // TODO Log error and throw exception or add package validation
                 continue;
             }
@@ -195,6 +196,7 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
      * Update quote with L1EntryNew.
      *
      * @param l1EntryInfo - L1EntryNew
+     * @param quote       - type of quote
      */
     protected void updateByL1EntryNew(final Quote quote, final L1EntryInfo l1EntryInfo) {
         if (quote.getSize() != l1EntryInfo.getSize()) {

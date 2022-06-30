@@ -94,6 +94,7 @@ interface L2MarketSide<Quote> extends MarketSide<Quote> {
     /**
      * Remove quote by level.
      *
+     * @param level - the level of the quote to be removed
      * @return removed quote
      */
     Quote remove(int level);

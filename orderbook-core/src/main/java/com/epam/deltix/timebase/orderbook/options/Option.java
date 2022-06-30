@@ -24,7 +24,7 @@ import java.util.StringJoiner;
  *
  * @param <T> stored value.
  */
-public class Option<T> {
+public final class Option<T> {
 
     /**
      * Common instance for {@code empty()}.

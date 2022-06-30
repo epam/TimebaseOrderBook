@@ -82,7 +82,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
         if (!exchange.hasValue()) {
             // TODO Log warning!!
-            return null;// TODO move to another palace
+            // TODO move to another palace
+            return null;
         }
 
         if (exchange.get().getProcessor().isEmpty()) {
@@ -98,6 +99,7 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
         final short level = l2EntryNewInfo.getLevel();
 
+        // TODO: 6/30/2022 need to refactor return value
         if (marketSide.isGap(level)) {
             switch (gapMode) {
                 case FILL_GAP:
@@ -105,6 +107,7 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
                     return marketSide.getWorstQuote();
                 case SKIP_AND_DROP:
                     clear();
+                    return null;
                 case SKIP:
                 default:
                     return null;
@@ -131,7 +134,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         final long exchangeId = l2EntryUpdateInfo.getExchangeId();
         final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
         if (!exchange.hasValue()) {
-            return;// TODO move to another palace
+            // TODO move to another palace
+            return;
         }
 
         final QuoteSide side = l2EntryUpdateInfo.getSide();
@@ -180,7 +184,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
 
             final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
 
-            final short maxDepth = marketSide.getMaxDepth();// Both side have the same max depth
+            // Both side have the same max depth
+            final short maxDepth = marketSide.getMaxDepth();
             if ((side == ASK && askCnt == maxDepth) || (side == BID && bidCnt == maxDepth)) {
                 continue;
             }

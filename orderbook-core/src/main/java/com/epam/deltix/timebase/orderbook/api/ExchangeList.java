@@ -88,7 +88,7 @@ public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
     }
 
     default void forEach(final Predicate<StockExchange> action) {
-        for (StockExchange e : this) {
+        for (final StockExchange e : this) {
             if (!action.test(e)) {
                 return;
             }
@@ -97,7 +97,7 @@ public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
 
     default <Cookie> void forEach(final BiPredicate<StockExchange, Cookie> action,
                                   final Cookie cookie) {
-        for (StockExchange e : this) {
+        for (final StockExchange e : this) {
             if (!action.test(e, cookie)) {
                 return;
             }

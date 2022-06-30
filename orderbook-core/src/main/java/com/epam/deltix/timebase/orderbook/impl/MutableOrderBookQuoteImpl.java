@@ -137,7 +137,7 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
 
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder();
+        final StringBuilder str = new StringBuilder();
         return toString(str).toString();
     }
 

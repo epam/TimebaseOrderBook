@@ -33,11 +33,11 @@ class MutableExchangeListImpl<Quote, StockExchange extends Exchange<Quote>>
 
     private final ReusableIterator<StockExchange> itr;
 
-    public MutableExchangeListImpl() {
+    MutableExchangeListImpl() {
         this(DEFAULT_INITIAL_CAPACITY);
     }
 
-    public MutableExchangeListImpl(final int initialCapacity) {
+    MutableExchangeListImpl(final int initialCapacity) {
         this.data = new ArrayList<>(initialCapacity);
         this.itr = new ReusableIterator<>(data);
     }
@@ -75,7 +75,7 @@ class MutableExchangeListImpl<Quote, StockExchange extends Exchange<Quote>>
         return itr;
     }
 
-    final static class ReusableIterator<StockExchange> implements Iterator<StockExchange> {
+    static final class ReusableIterator<StockExchange> implements Iterator<StockExchange> {
 
         private final List<Option<StockExchange>> data;
 

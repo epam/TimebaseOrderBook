@@ -42,6 +42,7 @@ interface QuoteProcessor<Quote> extends OrderBook<Quote> {
      * Process incremental update market data entry.
      *
      * @param pck - Package header container
+     * @return true if process is success
      */
     boolean process(final BaseEntryInfo pck);
 
@@ -49,6 +50,7 @@ interface QuoteProcessor<Quote> extends OrderBook<Quote> {
      * Process only snapshot(VENDOR,PERIODICAL) market data entry.
      *
      * @param marketMessageInfo - Package header container
+     * @return true if process is success
      */
     boolean processSnapshot(final PackageHeaderInfo marketMessageInfo);
 

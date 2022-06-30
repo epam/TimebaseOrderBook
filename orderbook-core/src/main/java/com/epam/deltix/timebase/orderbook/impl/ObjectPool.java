@@ -17,7 +17,6 @@
 package com.epam.deltix.timebase.orderbook.impl;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -63,30 +62,9 @@ public final class ObjectPool<T extends MutableOrderBookQuote> {
             }
 
             array[size++] = item;
-            item.release();// TODO ???
+            // TODO why in this place???
+            item.release();
         }
-    }
-
-    /**
-     * Returns all given items into pool and clears input list (!)
-     */
-    public void releaseAndClean(final List<T> items) {
-        final int cnt = items.size();
-        final int capacity = size + cnt;
-
-        if (capacity > array.length) {
-            array = Arrays.copyOf(array, capacity + (capacity >> 3));
-        }
-
-        for (int i = 0; i < cnt; i++) {
-            final T item = items.get(i);
-
-            if (item != null) {
-                array[size++] = item;
-            }
-        }
-
-        items.clear();
     }
 
     public int getTotalSize() {

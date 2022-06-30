@@ -22,6 +22,7 @@ import com.epam.deltix.timebase.orderbook.options.Defaults;
 import com.epam.deltix.timebase.orderbook.options.GapMode;
 import com.epam.deltix.timebase.orderbook.options.Option;
 import com.epam.deltix.timebase.orderbook.options.UpdateMode;
+import com.epam.deltix.util.annotations.Alphanumeric;
 import com.epam.deltix.util.collections.generated.ObjectList;
 
 /**
@@ -49,12 +50,12 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
      */
     private boolean isWaitingForSnapshot = false;
 
-    public AbstractL2MultiExchangeProcessor(final int initialExchangeCount,
-                                            final int initialDepth,
-                                            final int maxDepth,
-                                            final ObjectPool<Quote> pool,
-                                            final GapMode gapMode,
-                                            final UpdateMode updateMode) {
+    AbstractL2MultiExchangeProcessor(final int initialExchangeCount,
+                                     final int initialDepth,
+                                     final int maxDepth,
+                                     final ObjectPool<Quote> pool,
+                                     final GapMode gapMode,
+                                     final UpdateMode updateMode) {
         this.initialDepth = (short) initialDepth;
         this.maxDepth = maxDepth;
         this.pool = pool;
@@ -89,7 +90,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
     @Override
     public void processL2VendorSnapshot(final PackageHeaderInfo marketMessageInfo) {
         final ObjectList<BaseEntryInfo> entries = marketMessageInfo.getEntries();
-        final long exchangeId = entries.get(0).getExchangeId();// @Alphanumeric
+        @Alphanumeric final long exchangeId = entries.get(0).getExchangeId();
 
         final L2Processor<Quote> exchange = clearExchange(exchangeId);
 
@@ -121,6 +122,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
 
         final L2MarketSide<Quote> marketSide = exchange.getMarketSide(side);
 
+        // TODO: 6/30/2022 need to refactor return value
         // Duplicate
         if (marketSide.isGap(level)) {
             switch (gapMode) {
@@ -128,6 +130,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
                     break;
                 case SKIP_AND_DROP:
                     clearExchange(exchange);
+                    return null;
                 case SKIP:
                     return null;
                 default:

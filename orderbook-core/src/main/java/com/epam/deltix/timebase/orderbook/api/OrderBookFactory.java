@@ -45,7 +45,8 @@ public class OrderBookFactory {
      * <p>
      * Note: FlyWeight pattern in use. We don't keep any references on your classes (opt) after method returns execution.
      *
-     * @param opt to use.
+     * @param <Quote> type of quote
+     * @param opt     to use.
      * @return a new OrderBook instance of given type.
      * @throws NullPointerException          - if opt is null.
      * @throws UnsupportedOperationException - if some options does not supported.
@@ -64,8 +65,7 @@ public class OrderBookFactory {
                 if (orderBookType == OrderBookType.SINGLE_EXCHANGE) {
                     book = L1OrderBookFactory.newSingleExchangeBook(symbol, updateMode);
                 } else {
-                    throw new UnsupportedOperationException("Unsupported book mode: " + orderBookType +
-                            " for quote levels: " + quoteLevels);
+                    throw new UnsupportedOperationException("Unsupported book mode: " + orderBookType + " for quote levels: " + quoteLevels);
                 }
                 break;
             case LEVEL_TWO:
@@ -94,6 +94,7 @@ public class OrderBookFactory {
     /**
      * Factory method for create the order book with default options.
      *
+     * @param <Quote> type of quote
      * @return a new OrderBook instance of given type.
      * @see Defaults
      * @see OrderBook

@@ -31,7 +31,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     private final ReusableIterator<Quote> itr;
     private Quote quote;
 
-    public AbstractL1MarketSide() {
+    AbstractL1MarketSide() {
         this.itr = new ReusableIterator<>();
     }
 
@@ -81,7 +81,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        for (Quote quote : this) {
+        for (final Quote quote : this) {
             builder.append(quote).append(" ");
         }
         return builder.toString();
@@ -96,7 +96,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     /**
      * An adapter to safely externalize the value iterator.
      */
-    final static class ReusableIterator<Quote extends OrderBookQuote> implements Iterator<Quote> {
+    static final class ReusableIterator<Quote extends OrderBookQuote> implements Iterator<Quote> {
 
         private Quote quote;
 
@@ -122,7 +122,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
         }
     }
 
-    final static class ASK<Quote extends MutableOrderBookQuote> extends AbstractL1MarketSide<Quote> {
+    static final class ASK<Quote extends MutableOrderBookQuote> extends AbstractL1MarketSide<Quote> {
 
         @Override
         public QuoteSide getSide() {
@@ -130,7 +130,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
         }
     }
 
-    final static class BID<Quote extends MutableOrderBookQuote> extends AbstractL1MarketSide<Quote> {
+    static final class BID<Quote extends MutableOrderBookQuote> extends AbstractL1MarketSide<Quote> {
 
         @Override
         public QuoteSide getSide() {

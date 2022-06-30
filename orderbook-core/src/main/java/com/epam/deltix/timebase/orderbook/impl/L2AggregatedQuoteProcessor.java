@@ -33,12 +33,12 @@ import static com.epam.deltix.dfp.Decimal64Utils.*;
  */
 class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends AbstractL2MultiExchangeProcessor<Quote> {
 
-    public L2AggregatedQuoteProcessor(final int initialExchangeCount,
-                                      final int initialDepth,
-                                      final int maxDepth,
-                                      final ObjectPool<Quote> pool,
-                                      final GapMode gapMode,
-                                      final UpdateMode updateMode) {
+    L2AggregatedQuoteProcessor(final int initialExchangeCount,
+                               final int initialDepth,
+                               final int maxDepth,
+                               final ObjectPool<Quote> pool,
+                               final GapMode gapMode,
+                               final UpdateMode updateMode) {
         super(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode);
     }
 
@@ -120,7 +120,7 @@ class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends Ab
             pool.release(release);
         }
         bids.clear();
-        for (MutableExchange<Quote, L2Processor<Quote>> exchange : exchanges) {
+        for (final MutableExchange<Quote, L2Processor<Quote>> exchange : exchanges) {
             exchange.getProcessor().clear();
         }
     }

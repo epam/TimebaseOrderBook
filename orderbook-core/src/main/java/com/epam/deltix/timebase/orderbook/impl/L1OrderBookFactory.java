@@ -35,11 +35,12 @@ public class L1OrderBookFactory {
     /**
      * Creates OrderBook for single exchange market feed.
      *
-     * @param updateMode - Modes of order book work. Waiting first snapshot don't apply incremental updates before it or no.
+     * @param <Quote>    - type of quote
+     * @param symbol     - type of symbol
+     * @param updateMode - modes of order book work. Waiting first snapshot don't apply incremental updates before it or no.
      * @return order book
      */
-    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final Option<String> symbol,
-                                                                                        final UpdateMode updateMode) {
+    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final Option<String> symbol, final UpdateMode updateMode) {
         final int initialSize = 2;
         final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialSize, MutableOrderBookQuoteImpl::new);
         final QuoteProcessor<MutableOrderBookQuote> processor = new L1SingleExchangeQuoteProcessor<>(pool, updateMode);

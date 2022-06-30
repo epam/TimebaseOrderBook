@@ -38,8 +38,8 @@ class OrderBookDecorator<Quote, Processor extends QuoteProcessor<Quote>> impleme
     private final Processor processor;
     private final Option<String> symbol;
 
-    public OrderBookDecorator(final Option<String> symbol,
-                              final Processor processor) {
+    OrderBookDecorator(final Option<String> symbol,
+                       final Processor processor) {
         Objects.requireNonNull(symbol);
         Objects.requireNonNull(processor);
         this.processor = processor;
@@ -116,8 +116,8 @@ class OrderBookDecorator<Quote, Processor extends QuoteProcessor<Quote>> impleme
                 return processor.processSnapshot(marketMessageInfo);
             }
         } catch (final Throwable e) {
-            throw new Error("Internal Error process entries: " + marketMessageInfo.getEntries()
-                    + " Book state: ASK: size: " + getMarketSide(QuoteSide.ASK).depth() + " " + getMarketSide(QuoteSide.ASK) +
+            throw new Error("Internal Error process entries: " + marketMessageInfo.getEntries() +
+                    " Book state: ASK: size: " + getMarketSide(QuoteSide.ASK).depth() + " " + getMarketSide(QuoteSide.ASK) +
                     " BID: size: " + getMarketSide(QuoteSide.BID).depth() + " " + getMarketSide(QuoteSide.BID), e);
         }
         return false;

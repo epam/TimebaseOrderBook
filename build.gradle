@@ -22,8 +22,6 @@ configure(allprojects) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'checkstyle'
 
-    archivesBaseName = 'timebase' + path.replace(':', '-')
-
     compileJava.options.encoding = 'UTF-8'
     sourceCompatibility = 11
     targetCompatibility = 11
@@ -154,7 +152,6 @@ configure(publishingProjects) {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
-                artifactId = archivesBaseName
 
                 versionMapping {
                     usage(Usage.JAVA_RUNTIME) {
@@ -166,7 +163,7 @@ configure(publishingProjects) {
                 }
 
                 pom {
-                    name = "TimebaseOrderBook"
+                    name = "OrderBook"
                     packaging = 'jar'
                     description = 'High efficient garbage free orderbook for Java 11+'
                     url = 'https://github.com/epam/TimebaseOrderBook.git'

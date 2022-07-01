@@ -108,7 +108,7 @@ public class OrderBook_01_L1_SingleExchangeOrderBook extends AbstractSample {
 
 
         System.out.println(System.lineSeparator());
-        for (OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
+        for (final OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
             System.out.println(quote);
         }
 

@@ -131,7 +131,7 @@ public abstract class AbstractOrderBookTest {
                         " Actual :" + Decimal64Utils.toString(quote.getPrice()));
     }
 
-    public void assertNumberOfOrders(QuoteSide side, short level, long expectedNumberOfOrders) {
+    public void assertNumberOfOrders(final QuoteSide side, final short level, final long expectedNumberOfOrders) {
         final OrderBookQuote quote = getQuoteByLevel(side, level, getBook());
         Assertions.assertEquals(expectedNumberOfOrders, quote.getNumberOfOrders(),
                 () -> "Invalid number of orders!" +
@@ -163,7 +163,7 @@ public abstract class AbstractOrderBookTest {
         }
     }
 
-    public void assertNotEqualNumberOfOrders(QuoteSide side, short level, long expectedNumberOfOrders) {
+    public void assertNotEqualNumberOfOrders(final QuoteSide side, final short level, final long expectedNumberOfOrders) {
         final OrderBookQuote quote = getQuoteByLevel(side, level, getBook());
         Assertions.assertNotEquals(expectedNumberOfOrders, quote.getNumberOfOrders(),
                 () -> "Invalid number of orders!" +
@@ -411,7 +411,7 @@ public abstract class AbstractOrderBookTest {
         packageHeader.setPackageType(packageType);
 
         for (int j = 0; j < orderBookDepth; ++j) {
-            L2EntryNew entryNew = new L2EntryNew();
+            final L2EntryNew entryNew = new L2EntryNew();
             entryNew.setPrice(Decimal64Utils.fromDouble(bestBidAndAsk + j));
             entryNew.setSize(Decimal64Utils.fromDouble(size));
             entryNew.setLevel((short) j);
@@ -422,7 +422,7 @@ public abstract class AbstractOrderBookTest {
         }
 
         for (int j = 0; j < orderBookDepth; ++j) {
-            L2EntryNew entryNew = new L2EntryNew();
+            final L2EntryNew entryNew = new L2EntryNew();
             entryNew.setPrice(Decimal64Utils.fromDouble(bestBidAndAsk - j));
             entryNew.setSize(Decimal64Utils.fromDouble(size));
             entryNew.setLevel((short) j);
@@ -481,7 +481,7 @@ public abstract class AbstractOrderBookTest {
         final PackageHeader packageHeader = new PackageHeader();
         final ObjectArrayList<BaseEntryInfo> baseEntryInfos = new ObjectArrayList<>();
 
-        BookResetEntry resetEntry = new BookResetEntry();
+        final BookResetEntry resetEntry = new BookResetEntry();
         resetEntry.setExchangeId(exchangeId);
         resetEntry.setModelType(getBook().getQuoteLevels());
         baseEntryInfos.add(resetEntry);

@@ -39,7 +39,7 @@ import java.util.function.Predicate;
  */
 public class OrderBook_01_SingleExchangeOrderBook extends AbstractSample {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final String symbol = "BTC/USD";
         final long exchangeId = AlphanumericUtils.toAlphanumericUInt64("COINBASE");
         final int marketDepth = 10;
@@ -112,7 +112,7 @@ public class OrderBook_01_SingleExchangeOrderBook extends AbstractSample {
         orderBook.getMarketSide(QuoteSide.ASK).forEach((Predicate<OrderBookQuote>) OrderBook_01_SingleExchangeOrderBook::printOrderBookLevel);
 
         System.out.println(System.lineSeparator());
-        for (OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
+        for (final OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
             System.out.println(quote);
         }
 

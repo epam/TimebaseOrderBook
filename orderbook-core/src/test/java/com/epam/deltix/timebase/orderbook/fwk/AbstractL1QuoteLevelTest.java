@@ -78,7 +78,7 @@ public abstract class AbstractL1QuoteLevelTest extends AbstractOrderBookTest {
         final int size = 5;
         final int numOfOrders = 25;
 
-        @Decimal long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
+        @Decimal final long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
         simulateL1QuoteSnapshot(packageType, COINBASE, bbo, size, numOfOrders);
 
         assertTotalQuantity(QuoteSide.BID, expectedTotalQuantity);

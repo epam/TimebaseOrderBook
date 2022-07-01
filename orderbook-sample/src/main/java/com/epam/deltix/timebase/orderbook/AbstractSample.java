@@ -34,7 +34,7 @@ public abstract class AbstractSample {
         packageHeader.setPackageType(PackageType.VENDOR_SNAPSHOT);
 
         for (int level = 0; level < marketDepth; ++level) {
-            L2EntryNew entryNew = new L2EntryNew();
+            final L2EntryNew entryNew = new L2EntryNew();
             entryNew.setPrice(Decimal64Utils.fromDouble(marketDepth + level));
             entryNew.setSize(Decimal64Utils.fromDouble(10));
             entryNew.setLevel((short) level);
@@ -44,7 +44,7 @@ public abstract class AbstractSample {
         }
 
         for (int level = 0; level < marketDepth; ++level) {
-            L2EntryNew entryNew = new L2EntryNew();
+            final L2EntryNew entryNew = new L2EntryNew();
             entryNew.setPrice(Decimal64Utils.fromDouble(marketDepth - level));
             entryNew.setSize(Decimal64Utils.fromDouble(10));
             entryNew.setLevel((short) level);

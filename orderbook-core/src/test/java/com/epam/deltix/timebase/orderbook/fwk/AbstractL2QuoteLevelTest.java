@@ -149,7 +149,7 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
         final int size = 5;
         final int numberOfOrders = 25;
 
-        @Decimal long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
+        @Decimal final long expectedTotalQuantity = Decimal64Utils.fromInt(size * maxDepth);
 
         simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
         assertTotalQuantity(QuoteSide.BID, expectedTotalQuantity);
@@ -271,7 +271,7 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
                                                                      @Decimal final long size,
                                                                      final long numOfOrders) {
 
-        int maxDepth = priceLevel + 1;
+        final int maxDepth = priceLevel + 1;
         final OrderBookOptions opt = new OrderBookOptionsBuilder().maxDepth(maxDepth).gapMode(GapMode.SKIP).build();
         createBook(opt);
 
@@ -292,7 +292,7 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
                                                              @Decimal final long size,
                                                              final long numOfOrders) {
 
-        int maxDepth = 2;
+        final int maxDepth = 2;
         final OrderBookOptions opt = new OrderBookOptionsBuilder().maxDepth(maxDepth).gapMode(GapMode.SKIP).build();
         createBook(opt);
 

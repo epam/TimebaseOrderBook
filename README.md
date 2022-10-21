@@ -120,7 +120,7 @@ final OrderBook<OrderBookQuote> orderBook = OrderBookFactory.create();
   <br>The following types are supported:
   * *SINGLE_EXCHANGE* - order book from single exchange 
   * *CONSOLIDATED*   - consolidated view on the market from multiple exchanges, you can see individual exchange sizes 
-  * *SINGLE_EXCHANGE*     - aggregated view of multiple exchanges, you can see combined size of each price level 
+  * *AGGREGATED*     - aggregated view of multiple exchanges, you can see combined size of each price level 
    
 
  - ***updateMode*** -  What do we do with incremental update if we have empty order book?

@@ -75,6 +75,13 @@ public interface OrderBookOptions {
     Option<Integer> getMaxDepth();
 
     /**
+     * Stock quote unreachableDepth mode.
+     *
+     * @return unreachableDepth mode.
+     */
+    Option<UnreachableDepthMode> getUnreachableDepthMode();
+
+    /**
      * Initial pool size for stock exchanges.
      *
      * @return pool size.

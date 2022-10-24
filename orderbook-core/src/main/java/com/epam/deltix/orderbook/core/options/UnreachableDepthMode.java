@@ -17,39 +17,30 @@
 package com.epam.deltix.orderbook.core.options;
 
 /**
- * An enumeration of possible values for configuring the gaps in stock quotes.
+ * An enumeration of possible values for configuring the unreachable(level more than max deep limit) level in stock quotes.
  * <p>
- * Note: GapMode working only with INCREMENTAL_UPDATE
+ * Note: UnreachableDepthMode depends on max deep limit
  * Supported for L2
  *
  * @author Andrii_Ostapenko1
- * @see com.epam.deltix.timebase.messages.universal.PackageType
+ * @see BindOrderBookOptionsBuilder#maxDepth(int)
  */
 // TODO ADD UNIT TEST!!
-public enum GapMode {
+public enum UnreachableDepthMode {
 
     /**
-     * The operator ignores all gaps in stock quotes.
+     * The operator ignores all unreachable levels in stock quotes.
      * <p>
-     * If we have a gap between the last existing level and currently inserted level (empty levels between them),
-     * then let's skip quote.
+     * If we have a level more than available level, then let's skip quote.
      */
     SKIP,
 
     /**
      * The operator drop all quotes for stock exchange.
      * <p>
-     * If we have a gap between the last existing level and currently inserted level (empty levels between them),
+     * If we have a level more than available level,
      * then let's skip quote and drop all quote for stock exchange.
      */
     SKIP_AND_DROP,
-
-    /**
-     * The operator fill gaps in stock quotes.
-     * <p>
-     * If we have a gap between the last existing level and currently inserted level (empty levels between them),
-     * then let's fill these empty levels with values from the current event.
-     */
-    FILL_GAP
 
 }

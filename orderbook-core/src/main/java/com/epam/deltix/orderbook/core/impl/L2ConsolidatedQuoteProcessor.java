@@ -18,6 +18,7 @@ package com.epam.deltix.orderbook.core.impl;
 
 import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.orderbook.core.options.GapMode;
+import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
 import com.epam.deltix.orderbook.core.options.UpdateMode;
 import com.epam.deltix.timebase.messages.universal.L2EntryUpdateInfo;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
@@ -34,8 +35,9 @@ class L2ConsolidatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends 
                                  final int maxDepth,
                                  final ObjectPool<Quote> pool,
                                  final GapMode gapMode,
-                                 final UpdateMode updateMode) {
-        super(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode);
+                                 final UpdateMode updateMode,
+                                 final UnreachableDepthMode unreachableDepthMode) {
+        super(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode,unreachableDepthMode);
     }
 
     @Override

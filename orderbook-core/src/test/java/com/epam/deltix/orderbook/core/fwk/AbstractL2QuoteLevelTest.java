@@ -21,6 +21,7 @@ import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.orderbook.core.options.GapMode;
 import com.epam.deltix.orderbook.core.options.OrderBookOptions;
 import com.epam.deltix.orderbook.core.options.OrderBookOptionsBuilder;
+import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
 import com.epam.deltix.timebase.messages.universal.PackageType;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import org.junit.jupiter.api.Assertions;
@@ -157,6 +158,37 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
     }
 
     @ParameterizedTest
+    @EnumSource(value = PackageType.class,
+            mode = EnumSource.Mode.INCLUDE,
+            names = {"VENDOR_SNAPSHOT", "PERIODICAL_SNAPSHOT"})
+    public void incrementalUpdate_L2Quote_addLevelMoreThenSnapshotDepth(final PackageType packageType) {
+        final int maxDepth = 10;
+        final int bbo = 25;
+        final int size = 5;
+        final int numberOfOrders = 25;
+
+        //TODO refactor (make more simple)
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
+        for (int i = 0; i < maxDepth; i++) {
+            simulateL2Insert(COINBASE,
+                    QuoteSide.ASK,
+                    (short) ((short) maxDepth + i),
+                    Decimal64Utils.fromInt(80 + i),
+                    Decimal64Utils.fromInt(size), numberOfOrders);
+            assertBookSize(QuoteSide.ASK, maxDepth + i + 1);
+        }
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
+        for (int i = 0; i < maxDepth; i++) {
+            simulateL2Insert(COINBASE,
+                    QuoteSide.BID,
+                    (short) ((short) maxDepth + i),
+                    Decimal64Utils.fromInt(80 - i),
+                    Decimal64Utils.fromInt(size), numberOfOrders);
+            assertBookSize(QuoteSide.BID, maxDepth + i + 1);
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("quoteProvider")
     public void incrementUpdate_RandomDelete_InsertLast_L2Quote(final int maxExchangeDepth,
                                                                 final int bbo,
@@ -284,16 +316,20 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
 
     @ParameterizedTest
     @MethodSource("quoteProvider")
-    public void snapshot_maxDepth_gapModeSkip_insert_L2Quote(final int maxExchangeDepth,
-                                                             final int bbo,
-                                                             final QuoteSide side,
-                                                             final short priceLevel,
-                                                             @Decimal final long price,
-                                                             @Decimal final long size,
-                                                             final long numOfOrders) {
+    public void snapshot_maxDepth_unreachableDepthModeSkip_insert_L2Quote(final int maxExchangeDepth,
+                                                                          final int bbo,
+                                                                          final QuoteSide side,
+                                                                          final short priceLevel,
+                                                                          @Decimal final long price,
+                                                                          @Decimal final long size,
+                                                                          final long numOfOrders) {
 
         final int maxDepth = 2;
-        final OrderBookOptions opt = new OrderBookOptionsBuilder().maxDepth(maxDepth).gapMode(GapMode.SKIP).build();
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .maxDepth(maxDepth)
+                .unreachableDepthMode(UnreachableDepthMode.SKIP)
+                .build();
+
         createBook(opt);
 
         simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders);
@@ -348,16 +384,16 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
 
     @ParameterizedTest
     @MethodSource("quoteProvider")
-    public void snapshot_maxDepth_gapModeSkipAndDrop_insert_L2Quote(final int maxExchangeDepth,
-                                                                    final int bbo,
-                                                                    final QuoteSide side,
-                                                                    final short priceLevel,
-                                                                    @Decimal final long price,
-                                                                    @Decimal final long size,
-                                                                    final long numOfOrders) {
+    public void snapshot_maxDepth_unreachableDepthMode_SkipAndDrop_insert_L2Quote(final int maxExchangeDepth,
+                                                                                  final int bbo,
+                                                                                  final QuoteSide side,
+                                                                                  final short priceLevel,
+                                                                                  @Decimal final long price,
+                                                                                  @Decimal final long size,
+                                                                                  final long numOfOrders) {
         final OrderBookOptions opt = new OrderBookOptionsBuilder()
                 .maxDepth(priceLevel)
-                .gapMode(GapMode.SKIP_AND_DROP)
+                .unreachableDepthMode(UnreachableDepthMode.SKIP_AND_DROP)
                 .build();
         createBook(opt);
 
@@ -381,7 +417,7 @@ public abstract class AbstractL2QuoteLevelTest extends AbstractOrderBookTest {
         createBook(opt);
 
         simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders);
-        simulateL2Insert(COINBASE, side, (short) (maxExchangeDepth + priceLevel), price, size, numOfOrders);
+        simulateL2Insert(COINBASE, side, (short) (maxExchangeDepth + priceLevel + 1), price, size, numOfOrders);
         assertBookSizeBySides(0);
     }
 

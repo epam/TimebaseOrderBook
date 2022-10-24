@@ -26,7 +26,10 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
     private Option<GapMode> gapMode = Option.empty();
     private Option<String> symbol = Option.empty();
     private Option<Integer> initialDepth = Option.empty();
+
     private Option<Integer> maxDepth = Option.empty();
+
+    private Option<UnreachableDepthMode> unreachableDepthMode = Option.empty();
     private Option<Integer> initialExchangesPoolSize = Option.empty();
     private Option<OrderBookOptions> otherOptions = Option.empty();
 
@@ -113,6 +116,21 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
             return otherOptions.get().getMaxDepth().orAnother(maxDepth);
         } else {
             return maxDepth;
+        }
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder unreachableDepthMode(final UnreachableDepthMode mode) {
+        this.unreachableDepthMode = Option.wrap(mode);
+        return this;
+    }
+
+    @Override
+    public Option<UnreachableDepthMode> getUnreachableDepthMode() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().getUnreachableDepthMode().orAnother(unreachableDepthMode);
+        } else {
+            return unreachableDepthMode;
         }
     }
 

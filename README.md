@@ -166,6 +166,14 @@ final OrderBook<OrderBookQuote> orderBook = OrderBookFactory.create();
    <br>Type: int
    <br>Default Value is: ***32767***
 
+- :1234: ***unreachableDepthMode*** - What do we do if we have quote level more than maxDepth? <br>\
+  <br>Since: ***1.0.17***
+  <br>Type: UnreachableDepthMode
+  <br>Default Value is: ***SKIP***
+  <br>The following types are supported:
+    * *SKIP* - let's skip quote
+    * *SKIP_AND_DROP*   - let's skip quote and drop all quote for stock exchange
+
 
  - :1234: ***initialExchangesPoolSize*** - How large initial pool size for stock exchanges should be?<br>
    Supported for AGGREGATED and CONSOLIDATED order book type. 

@@ -70,18 +70,19 @@ public class OrderBookFactory {
                 break;
             case LEVEL_TWO:
                 final GapMode gapMode = opt.getGapMode().orElse(Defaults.GAP_MODE);
+                final UnreachableDepthMode unreachableDepthMode = opt.getUnreachableDepthMode().orElse(Defaults.UNREACHABLE_DEPTH_MODE);
                 final int initialDepth = opt.getInitialDepth().orElse(Defaults.INITIAL_DEPTH);
                 final int maxDepth = opt.getMaxDepth().orElse(Defaults.MAX_DEPTH);
                 final Integer exchangePoolSize = opt.getInitialExchangesPoolSize().orElse(Defaults.INITIAL_EXCHANGES_POOL_SIZE);
                 switch (orderBookType) {
                     case SINGLE_EXCHANGE:
-                        book = L2OrderBookFactory.newSingleExchangeBook(symbol, initialDepth, maxDepth, gapMode, updateMode);
+                        book = L2OrderBookFactory.newSingleExchangeBook(symbol, initialDepth, maxDepth, gapMode, updateMode, unreachableDepthMode);
                         break;
                     case AGGREGATED:
-                        book = L2OrderBookFactory.newAggregatedBook(symbol, exchangePoolSize, initialDepth, maxDepth, gapMode, updateMode);
+                        book = L2OrderBookFactory.newAggregatedBook(symbol, exchangePoolSize, initialDepth, maxDepth, gapMode, updateMode, unreachableDepthMode);
                         break;
                     case CONSOLIDATED:
-                        book = L2OrderBookFactory.newConsolidatedBook(symbol, exchangePoolSize, initialDepth, maxDepth, gapMode, updateMode);
+                        book = L2OrderBookFactory.newConsolidatedBook(symbol, exchangePoolSize, initialDepth, maxDepth, gapMode, updateMode, unreachableDepthMode);
                         break;
                 }
                 break;

@@ -103,7 +103,7 @@ public class OrderBook_02_AggregatedOrderBook extends AbstractSample {
         }
 
         // Step 4.3: inspect order book state by iterator
-        for (long exchangeId : exchangeIds) {
+        for (final long exchangeId : exchangeIds) {
             System.out.println(System.lineSeparator());
             iterator = orderBook
                     .getExchanges()
@@ -122,7 +122,7 @@ public class OrderBook_02_AggregatedOrderBook extends AbstractSample {
                 .forEach((Predicate<OrderBookQuote>) OrderBook_02_AggregatedOrderBook::printOrderBookLevel);
 
         System.out.println(System.lineSeparator());
-        for (OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
+        for (final OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
             System.out.println(quote);
         }
 

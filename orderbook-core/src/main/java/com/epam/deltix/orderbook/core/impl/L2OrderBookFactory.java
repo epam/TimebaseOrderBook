@@ -20,6 +20,7 @@ import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
 import com.epam.deltix.orderbook.core.options.GapMode;
 import com.epam.deltix.orderbook.core.options.Option;
+import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
 import com.epam.deltix.orderbook.core.options.UpdateMode;
 
 /**
@@ -48,10 +49,11 @@ public class L2OrderBookFactory {
                                                                                         final int initialDepth,
                                                                                         final int maxDepth,
                                                                                         final GapMode gapMode,
-                                                                                        final UpdateMode updateMode) {
+                                                                                        final UpdateMode updateMode,
+                                                                                        final UnreachableDepthMode unreachableDepthMode) {
         final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialDepth, MutableOrderBookQuoteImpl::new);
         final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2SingleExchangeQuoteProcessor<>(initialDepth, maxDepth, pool, gapMode, updateMode);
+                new L2SingleExchangeQuoteProcessor<>(initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
         return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
     }
 
@@ -73,10 +75,11 @@ public class L2OrderBookFactory {
                                                                                       final int initialDepth,
                                                                                       final int maxDepth,
                                                                                       final GapMode gapMode,
-                                                                                      final UpdateMode updateMode) {
+                                                                                      final UpdateMode updateMode,
+                                                                                      final UnreachableDepthMode unreachableDepthMode) {
         final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialExchangeCount * initialDepth, MutableOrderBookQuoteImpl::new);
         final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2ConsolidatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode);
+                new L2ConsolidatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
         return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
     }
 
@@ -98,10 +101,11 @@ public class L2OrderBookFactory {
                                                                                     final int initialDepth,
                                                                                     final int maxDepth,
                                                                                     final GapMode gapMode,
-                                                                                    final UpdateMode updateMode) {
+                                                                                    final UpdateMode updateMode,
+                                                                                    final UnreachableDepthMode unreachableDepthMode) {
         final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialExchangeCount * initialDepth * 4, MutableOrderBookQuoteImpl::new);
         final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2AggregatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode);
+                new L2AggregatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
         return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
     }
 

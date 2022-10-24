@@ -204,9 +204,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public boolean hasLevel(final short level) {
-        if (level >= maxDepth || level < 0) {
-            return false;
-        } else if (data.size() > level) {
+        if (data.size() > level) {
             return Objects.nonNull(data.get(level));
         }
         return false;
@@ -235,12 +233,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     //TODO add doc !!
     @Override
     public boolean isGap(final short level) {
-        if (!hasLevel(level)) {
-            return depth() != level || // If trying to add to end
-                    level >= getMaxDepth() || // If we're using maxDepth parameter.
-                    (depth() == level && isFull()); //Receive incorrect level after snapshot. More than max depth
-        }
-        return false;
+        return !hasLevel(level) && level > depth();
     }
 
     @Override

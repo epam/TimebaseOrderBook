@@ -18,6 +18,7 @@ package com.epam.deltix.orderbook.core.impl;
 
 import com.epam.deltix.orderbook.core.options.GapMode;
 import com.epam.deltix.orderbook.core.options.Option;
+import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
 import com.epam.deltix.orderbook.core.options.UpdateMode;
 import com.epam.deltix.timebase.messages.universal.*;
 import com.epam.deltix.util.collections.generated.ObjectList;
@@ -39,6 +40,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
 
     //Parameters
     private final GapMode gapMode;
+
+    private final UnreachableDepthMode unreachableDepthMode;
     private final UpdateMode updateMode;
 
     /**
@@ -52,7 +55,9 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
                                           final int maxDepth,
                                           final ObjectPool<Quote> pool,
                                           final GapMode gapMode,
-                                          final UpdateMode updateMode) {
+                                          final UpdateMode updateMode,
+                                          final UnreachableDepthMode unreachableDepthMode) {
+        this.unreachableDepthMode = unreachableDepthMode;
         this.asks = L2MarketSide.factory(initialDepth, maxDepth, ASK);
         this.bids = L2MarketSide.factory(initialDepth, maxDepth, BID);
         this.pool = pool;
@@ -66,8 +71,9 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
                                           final int maxDepth,
                                           final ObjectPool<Quote> pool,
                                           final GapMode gapMode,
-                                          final UpdateMode updateMode) {
-        this(initialDepth, maxDepth, pool, gapMode, updateMode);
+                                          final UpdateMode updateMode,
+                                          final UnreachableDepthMode unreachableDepthMode) {
+        this(initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
         getOrCreateExchange(exchangeId);
     }
 
@@ -99,6 +105,18 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
         final short level = l2EntryNewInfo.getLevel();
 
+        if (level >= marketSide.getMaxDepth()) {
+            switch (unreachableDepthMode) {
+                case SKIP_AND_DROP:
+                    clear();
+                    return null;
+                case SKIP:
+                default:
+                    return null;
+            }
+            // Unreachable quote level
+        }
+
         // TODO: 6/30/2022 need to refactor return value
         if (marketSide.isGap(level)) {
             switch (gapMode) {
@@ -115,7 +133,9 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         }
 
         final Quote quote;
-        if (marketSide.isFull()) { // Check side is Full
+        if (level == marketSide.depth()) {// Add new worst quote
+            quote = pool.borrow();
+        } else if (marketSide.isFull()) { // Check side is Full and remove Worst quote
             quote = marketSide.removeWorstQuote();
             // Attention we remove worst quote bat not remove quote from multi exchange
         } else {

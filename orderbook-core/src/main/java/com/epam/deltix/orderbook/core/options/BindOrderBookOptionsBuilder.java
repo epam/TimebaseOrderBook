@@ -109,9 +109,19 @@ public interface BindOrderBookOptionsBuilder {
      * @param value initial max depth.
      * @return builder
      * @see Defaults#MAX_DEPTH
-     * @see OrderBookType
      */
     BindOrderBookOptionsBuilder maxDepth(int value);
+
+    /**
+     * What do we do if we have quote level more than maxDepth?.
+     * Supported for L2 quote level
+     *
+     * @param mode to use.
+     * @return builder
+     * @see Defaults#UNREACHABLE_DEPTH_MODE
+     * @see UnreachableDepthMode
+     */
+    BindOrderBookOptionsBuilder unreachableDepthMode(UnreachableDepthMode mode);
 
     /**
      * How large initial pool size for stock exchanges should be?

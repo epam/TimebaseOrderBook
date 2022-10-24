@@ -61,6 +61,11 @@ public final class Defaults {
     public static final Integer MAX_DEPTH = 32767;
 
     /**
+     * Default {@link UnreachableDepthMode}.
+     */
+    public static final UnreachableDepthMode UNREACHABLE_DEPTH_MODE = UnreachableDepthMode.SKIP;
+
+    /**
      * Initial pool size for stock exchanges.
      */
     public static final Integer INITIAL_EXCHANGES_POOL_SIZE = 1;

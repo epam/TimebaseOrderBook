@@ -57,7 +57,7 @@ interface L2Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor 
     default boolean process(final BaseEntryInfo pck) {
         if (pck instanceof L2EntryNew) {
             final L2EntryNew l2EntryNewInfo = (L2EntryNew) pck;
-            processL2EntryNewInfo(l2EntryNewInfo);
+                processL2EntryNewInfo(l2EntryNewInfo);
             return true;
         } else if (pck instanceof L2EntryUpdate) {
             final L2EntryUpdate l2EntryUpdateInfo = (L2EntryUpdate) pck;

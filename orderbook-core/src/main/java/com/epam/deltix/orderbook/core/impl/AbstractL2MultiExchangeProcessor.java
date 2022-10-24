@@ -17,10 +17,7 @@
 package com.epam.deltix.orderbook.core.impl;
 
 import com.epam.deltix.orderbook.core.api.MarketSide;
-import com.epam.deltix.orderbook.core.options.Defaults;
-import com.epam.deltix.orderbook.core.options.GapMode;
-import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.orderbook.core.options.*;
 import com.epam.deltix.timebase.messages.universal.*;
 import com.epam.deltix.util.annotations.Alphanumeric;
 import com.epam.deltix.util.collections.generated.ObjectList;
@@ -40,6 +37,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
     //Parameters
     protected final GapMode gapMode;
     protected final UpdateMode updateMode;
+    protected final UnreachableDepthMode unreachableDepthMode;
     protected final ObjectPool<Quote> pool;
     protected final short initialDepth;
     protected final int maxDepth;
@@ -55,12 +53,14 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
                                      final int maxDepth,
                                      final ObjectPool<Quote> pool,
                                      final GapMode gapMode,
-                                     final UpdateMode updateMode) {
+                                     final UpdateMode updateMode,
+                                     final UnreachableDepthMode unreachableDepthMode) {
         this.initialDepth = (short) initialDepth;
         this.maxDepth = maxDepth;
         this.pool = pool;
         this.gapMode = gapMode;
         this.updateMode = updateMode;
+        this.unreachableDepthMode = unreachableDepthMode;
         this.exchanges = new MutableExchangeListImpl<>(initialExchangeCount);
         this.asks = L2MarketSide.factory(initialExchangeCount * initialDepth, Defaults.MAX_DEPTH, QuoteSide.ASK);
         this.bids = L2MarketSide.factory(initialExchangeCount * initialDepth, Defaults.MAX_DEPTH, QuoteSide.BID);
@@ -124,6 +124,20 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
 
         // TODO: 6/30/2022 need to refactor return value
         // Duplicate
+        if (level >= marketSide.getMaxDepth()) {
+            switch (unreachableDepthMode) {
+                case SKIP_AND_DROP:
+                    clear();
+                    return null;
+                case SKIP:
+                default:
+                    return null;
+            }
+            // Unreachable quote level
+        }
+
+        // TODO: 6/30/2022 need to refactor return value
+        // Duplicate
         if (marketSide.isGap(level)) {
             switch (gapMode) {
                 case FILL_GAP:// We fill gaps at the exchange level.
@@ -138,7 +152,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
             }
         }
 
-        if (marketSide.isFull()) { //Remove worst quote
+        if (marketSide.hasLevel(level)) { //Remove worst quote
             removeQuote(marketSide.getWorstQuote(), side);
         }
 
@@ -262,7 +276,7 @@ abstract class AbstractL2MultiExchangeProcessor<Quote extends MutableOrderBookQu
         Option<MutableExchange<Quote, L2Processor<Quote>>> exchangeHolder = exchanges.getById(exchangeId);
         if (!exchangeHolder.hasValue()) {
             final L2SingleExchangeQuoteProcessor<Quote> processor =
-                    new L2SingleExchangeQuoteProcessor<>(exchangeId, initialDepth, maxDepth, pool, gapMode, updateMode);
+                    new L2SingleExchangeQuoteProcessor<>(exchangeId, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
             exchanges.add(new MutableExchangeImpl<>(exchangeId, processor));
             exchangeHolder = exchanges.getById(exchangeId);
         }

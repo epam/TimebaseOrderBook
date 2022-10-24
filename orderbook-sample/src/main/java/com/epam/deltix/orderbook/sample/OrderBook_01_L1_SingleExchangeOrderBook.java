@@ -39,7 +39,7 @@ import java.util.function.Predicate;
  */
 public class OrderBook_01_L1_SingleExchangeOrderBook extends AbstractSample {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final String symbol = "BTC/USD";
         final long exchangeId = AlphanumericUtils.toAlphanumericUInt64("COINBASE");
         final int marketDepth = 1;

@@ -37,7 +37,7 @@ import java.util.function.Predicate;
  */
 public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final String symbol = "BTC/USD";
         final int marketDepth = 10;
         final long[] exchangeIds = {
@@ -46,7 +46,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         };
 
         // Step 1: create order book
-        OrderBookOptions commonOpt = new OrderBookOptionsBuilder()
+        final OrderBookOptions commonOpt = new OrderBookOptionsBuilder()
                 .symbol(symbol)
                 .quoteLevels(DataModelType.LEVEL_TWO)
                 .initialDepth(marketDepth)
@@ -54,7 +54,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
                 .updateMode(UpdateMode.WAITING_FOR_SNAPSHOT)
                 .build();
 
-        OrderBookOptions opt = new OrderBookOptionsBuilder()
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
                 .parent(commonOpt)
                 .orderBookType(OrderBookType.CONSOLIDATED)
                 .build();
@@ -64,7 +64,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         System.out.println("Hello! I'm " + orderBook.getDescription() + " for stock symbol: " + orderBook.getSymbol().get() + "!");
 
         // Step 2: feed it with updates
-        for (long exchangeId : exchangeIds) {
+        for (final long exchangeId : exchangeIds) {
             orderBook.update(createL2VendorUpdate(marketDepth, exchangeId, symbol));
         }
 
@@ -77,7 +77,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         }
 
         // Step 4.1: inspect order book state by iterator
-        for (long exchangeId : exchangeIds) {
+        for (final long exchangeId : exchangeIds) {
             System.out.println(System.lineSeparator());
             iterator = orderBook
                     .getExchanges()
@@ -91,7 +91,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         }
 
         // Step 4.2: inspect order book state by iterator
-        for (long exchangeId : exchangeIds) {
+        for (final long exchangeId : exchangeIds) {
             System.out.println(System.lineSeparator());
             iterator = orderBook
                     .getExchanges()
@@ -105,7 +105,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         }
 
         // Step 4.3: inspect order book state by iterator
-        for (long exchangeId : exchangeIds) {
+        for (final long exchangeId : exchangeIds) {
             System.out.println(System.lineSeparator());
             iterator = orderBook
                     .getExchanges()
@@ -123,7 +123,7 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
         orderBook.getMarketSide(QuoteSide.ASK).forEach((Predicate<OrderBookQuote>) OrderBook_03_ConsolidatedOrderBook::printOrderBookLevel);
 
         System.out.println(System.lineSeparator());
-        for (OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
+        for (final OrderBookQuote quote : orderBook.getMarketSide(QuoteSide.ASK)) {
             System.out.println(quote);
         }
 

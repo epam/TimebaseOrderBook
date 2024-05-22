@@ -49,7 +49,14 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
     Quote getBestQuote();
 
     /**
-     * Get quote by level.
+     * Get worst quote.
+     *
+     * @return Worst quote from side or null if quote not found
+     */
+    Quote getWorstQuote();
+
+    /**
+     * Get quote by level. WARNING: this method can be slow for some implementations (for example, in L3 order book). Use iterator instead.
      *
      * @param level - level to use
      * @return quote or null if quote not found
@@ -89,30 +96,47 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
      * @param level - quote level to use.
      * @return true if this market side contains given quote level
      */
-    boolean hasLevel(short level);
+    boolean hasLevel(int level);
+
+    /**
+     * Get quote by quoteId.
+     * Unsupported operation for L2, always returns null.
+     *
+     * @param quoteId - Quote Id
+     * @return quote or null if quote not found
+     */
+    Quote getQuote(CharSequence quoteId);
+
+    /**
+     * Unsupported operation for L2, always returns false.
+     *
+     * @param quoteId - Quote Id
+     * @return true if this market side contains given quote ID
+     */
+    boolean hasQuote(CharSequence quoteId);
 
     @Override
     default Iterator<Quote> iterator() {
-        return iterator((short) 0);
+        return iterator(0);
     }
 
     @Override
-    default Iterator<Quote> iterator(final short fromLevel) {
-        return iterator(fromLevel, (short) depth());
+    default Iterator<Quote> iterator(final int fromLevel) {
+        return iterator(fromLevel, depth());
     }
 
     @Override
     default void forEach(final Predicate<Quote> action) {
-        forEach((short) 0, (short) depth(), action);
+        forEach(0, depth(), action);
     }
 
     @Override
-    default void forEach(final short level, final Predicate<Quote> action) {
-        forEach((short) 0, level, action);
+    default void forEach(final int level, final Predicate<Quote> action) {
+        forEach(0, level, action);
     }
 
     @Override
-    default void forEach(final short fromLevel, final short toLevel, final Predicate<Quote> action) {
+    default void forEach(final int fromLevel, final int toLevel, final Predicate<Quote> action) {
         Objects.requireNonNull(action);
         for (int i = fromLevel; i < toLevel; i++) {
             if (!action.test(getQuote(i))) {
@@ -123,17 +147,17 @@ public interface MarketSide<Quote> extends IterableMarketSide<Quote> {
 
     @Override
     default <Cookie> void forEach(final BiPredicate<Quote, Cookie> action, final Cookie cookie) {
-        forEach((short) 0, (short) depth(), action, cookie);
+        forEach(0, depth(), action, cookie);
     }
 
     @Override
-    default <Cookie> void forEach(final short fromLevel, final BiPredicate<Quote, Cookie> action, final Cookie cookie) {
-        forEach(fromLevel, (short) depth(), action, cookie);
+    default <Cookie> void forEach(final int fromLevel, final BiPredicate<Quote, Cookie> action, final Cookie cookie) {
+        forEach(fromLevel, depth(), action, cookie);
     }
 
     @Override
-    default <Cookie> void forEach(final short fromLevel,
-                                  final short toLevel,
+    default <Cookie> void forEach(final int fromLevel,
+                                  final int toLevel,
                                   final BiPredicate<Quote, Cookie> action,
                                   final Cookie cookie) {
         Objects.requireNonNull(action);

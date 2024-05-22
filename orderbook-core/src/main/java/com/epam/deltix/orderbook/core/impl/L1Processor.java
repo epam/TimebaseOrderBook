@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.timebase.messages.universal.*;
 import com.epam.deltix.util.collections.generated.ObjectList;
 
@@ -24,7 +25,7 @@ import com.epam.deltix.util.collections.generated.ObjectList;
  *
  * @author Andrii_Ostapenko
  */
-interface L1Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor {
+interface L1Processor<Quote> extends QuoteProcessor<Quote> {
 
     @Override
     default DataModelType getQuoteLevels() {
@@ -32,22 +33,26 @@ interface L1Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor 
     }
 
     @Override
-    L1MarketSide<Quote> getMarketSide(final QuoteSide side);
+    L1MarketSide<Quote> getMarketSide(QuoteSide side);
 
     /**
      * This type reports Level1-new: insert or update one line in Order Book either on ask or bid side.
      *
+     * @param pck            - package header container
      * @param l1EntryNewInfo - Level1-new entry to use
      * @return insert quote
      */
-    Quote processL1EntryNewInfo(final L1EntryInfo l1EntryNewInfo);
+    Quote processL1EntryNew(PackageHeaderInfo pck, L1EntryInfo l1EntryNewInfo);
 
-    void processL1VendorSnapshot(final PackageHeaderInfo marketMessageInfo);
+    boolean processL1Snapshot(PackageHeaderInfo marketMessageInfo);
 
-    default boolean process(final BaseEntryInfo pck) {
-        if (pck instanceof L1EntryInfo) {
-            final L1EntryInfo l1EntryNewInfo = (L1EntryInfo) pck;
-            processL1EntryNewInfo(l1EntryNewInfo);
+    default boolean processIncrementalUpdate(final PackageHeaderInfo pck, final BaseEntryInfo entryInfo) {
+        if (entryInfo instanceof L1EntryInfo) {
+            final L1EntryInfo l1EntryNewInfo = (L1EntryInfo) entryInfo;
+            //TODO need processing return value
+            processL1EntryNew(pck, l1EntryNewInfo);
+            return true;
+        } else if (entryInfo instanceof StatisticsEntry) {
             return true;
         }
         return false;
@@ -55,15 +60,18 @@ interface L1Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor 
 
     default boolean processSnapshot(final PackageHeaderInfo marketMessageInfo) {
         final ObjectList<BaseEntryInfo> entries = marketMessageInfo.getEntries();
-        final BaseEntryInfo baseEntryInfo = entries.get(0);
-        if (baseEntryInfo instanceof L1EntryInfo) {
-            processL1VendorSnapshot(marketMessageInfo);
-            return true;
-        } else if (baseEntryInfo instanceof BookResetEntryInfo) {
-            final BookResetEntryInfo resetEntryInfo = (BookResetEntryInfo) baseEntryInfo;
-            if (resetEntryInfo.getModelType() == getQuoteLevels()) {
-                processBookResetEntry(resetEntryInfo);
-                return true;
+        final int n = entries.size();
+        // skip statistic entries try to establish if we are dealing with order book reset or normal snapshot
+        for (int i = 0; i < n; i++) {
+            final BaseEntryInfo baseEntryInfo = entries.get(i);
+            if (baseEntryInfo instanceof L1EntryInfo) {
+                return processL1Snapshot(marketMessageInfo);
+            } else if (baseEntryInfo instanceof BookResetEntryInfo) {
+                final BookResetEntryInfo resetEntryInfo = (BookResetEntryInfo) baseEntryInfo;
+                if (resetEntryInfo.getModelType() == getQuoteLevels()) {
+                    processBookResetEntry(marketMessageInfo, resetEntryInfo);
+                    return true;
+                }
             }
         }
         return false;

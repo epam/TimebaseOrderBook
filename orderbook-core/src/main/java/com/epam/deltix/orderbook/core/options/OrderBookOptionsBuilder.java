@@ -16,22 +16,31 @@
  */
 package com.epam.deltix.orderbook.core.options;
 
+import com.epam.deltix.orderbook.core.api.ErrorListener;
+import com.epam.deltix.orderbook.core.api.OrderBookQuote;
+import com.epam.deltix.orderbook.core.impl.ObjectPool;
+import com.epam.deltix.orderbook.core.impl.QuotePoolFactory;
 import com.epam.deltix.timebase.messages.universal.DataModelType;
 
 public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookOptionsBuilder {
 
     private Option<DataModelType> quoteLevels = Option.empty();
+    private Option<Boolean> shouldStoreQuoteTimestamps = Option.empty();
     private Option<OrderBookType> bookType = Option.empty();
     private Option<UpdateMode> updateMode = Option.empty();
-    private Option<GapMode> gapMode = Option.empty();
+    private Option<PeriodicalSnapshotMode> periodicalSnapshotMode = Option.empty();
     private Option<String> symbol = Option.empty();
     private Option<Integer> initialDepth = Option.empty();
-
     private Option<Integer> maxDepth = Option.empty();
-
-    private Option<UnreachableDepthMode> unreachableDepthMode = Option.empty();
+    private Option<ValidationOptions> unreachableDepthMode = Option.empty();
     private Option<Integer> initialExchangesPoolSize = Option.empty();
     private Option<OrderBookOptions> otherOptions = Option.empty();
+    private Option<DisconnectMode> disconnectMode = Option.empty();
+    private Option<ResetMode> resetMode = Option.empty();
+    private Option<ErrorListener> errorListener = Option.empty();
+    private Option<Integer> initialSharedQuotePoolSize = Option.empty();
+    private Option<ObjectPool<? extends OrderBookQuote>> sharedObjectPool = Option.empty();
+    private Option<Boolean> isCompactVersion = Option.empty();
 
     @Override
     public BindOrderBookOptionsBuilder parent(final OrderBookOptions other) {
@@ -41,6 +50,9 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
 
     @Override
     public OrderBookOptions build() {
+        if (!sharedObjectPool.hasValue() && initialSharedQuotePoolSize.hasValue()) {
+            this.sharedObjectPool = Option.wrap(QuotePoolFactory.create(this, initialSharedQuotePoolSize.get()));
+        }
         return this;
     }
 
@@ -60,9 +72,39 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
     }
 
     @Override
+    public BindOrderBookOptionsBuilder periodicalSnapshotMode(final PeriodicalSnapshotMode mode) {
+        this.periodicalSnapshotMode = Option.wrap(mode);
+        return this;
+    }
+
+    @Override
+    public Option<PeriodicalSnapshotMode> getPeriodicalSnapshotMode() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().getPeriodicalSnapshotMode().orAnother(periodicalSnapshotMode);
+        } else {
+            return periodicalSnapshotMode;
+        }
+    }
+
+    @Override
     public BindOrderBookOptionsBuilder quoteLevels(final DataModelType type) {
         this.quoteLevels = Option.wrap(type);
         return this;
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder shouldStoreQuoteTimestamps(final boolean value) {
+        this.shouldStoreQuoteTimestamps = Option.wrap(value);
+        return this;
+    }
+
+    @Override
+    public Option<Boolean> shouldStoreQuoteTimestamps() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().shouldStoreQuoteTimestamps().orAnother(shouldStoreQuoteTimestamps);
+        } else {
+            return shouldStoreQuoteTimestamps;
+        }
     }
 
     @Override
@@ -120,15 +162,15 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
     }
 
     @Override
-    public BindOrderBookOptionsBuilder unreachableDepthMode(final UnreachableDepthMode mode) {
+    public BindOrderBookOptionsBuilder validationOptions(final ValidationOptions mode) {
         this.unreachableDepthMode = Option.wrap(mode);
         return this;
     }
 
     @Override
-    public Option<UnreachableDepthMode> getUnreachableDepthMode() {
+    public Option<ValidationOptions> getInvalidQuoteMode() {
         if (otherOptions.hasValue()) {
-            return otherOptions.get().getUnreachableDepthMode().orAnother(unreachableDepthMode);
+            return otherOptions.get().getInvalidQuoteMode().orAnother(unreachableDepthMode);
         } else {
             return unreachableDepthMode;
         }
@@ -149,6 +191,7 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
         }
     }
 
+
     @Override
     public BindOrderBookOptionsBuilder symbol(final String symbol) {
         this.symbol = Option.wrap(symbol);
@@ -165,17 +208,93 @@ public class OrderBookOptionsBuilder implements OrderBookOptions, BindOrderBookO
     }
 
     @Override
-    public BindOrderBookOptionsBuilder gapMode(final GapMode mode) {
-        this.gapMode = Option.wrap(mode);
+    public BindOrderBookOptionsBuilder disconnectMode(final DisconnectMode disconnectMode) {
+        this.disconnectMode = Option.wrap(disconnectMode);
         return this;
     }
 
     @Override
-    public Option<GapMode> getGapMode() {
+    public Option<DisconnectMode> getDisconnectMode() {
         if (otherOptions.hasValue()) {
-            return otherOptions.get().getGapMode().orAnother(gapMode);
+            return otherOptions.get().getDisconnectMode().orAnother(disconnectMode);
         } else {
-            return gapMode;
+            return disconnectMode;
         }
     }
+
+    @Override
+    public BindOrderBookOptionsBuilder errorListener(final ErrorListener errorListener) {
+        this.errorListener = Option.wrap(errorListener);
+        return this;
+    }
+
+    @Override
+    public Option<ErrorListener> getErrorListener() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().getErrorListener().orAnother(errorListener);
+        } else {
+            return errorListener;
+        }
+    }
+
+    @Override
+    public Option<Integer> getInitialSharedQuotePoolSize() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().getInitialSharedQuotePoolSize().orAnother(initialSharedQuotePoolSize);
+        } else {
+            return initialSharedQuotePoolSize;
+        }
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder sharedQuotePool(int initialSize) {
+        this.initialSharedQuotePoolSize = Option.wrap(initialSize);
+        return this;
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder sharedQuotePool(final ObjectPool<? extends OrderBookQuote> sharedObjectPool) {
+        this.sharedObjectPool = Option.wrap(sharedObjectPool);
+        return this;
+    }
+
+    @Override
+    public Option<ObjectPool<? extends OrderBookQuote>> getSharedObjectPool() {
+        if (sharedObjectPool.hasValue()) {
+            return otherOptions.get().getSharedObjectPool().orAnother(sharedObjectPool);
+        } else {
+            return sharedObjectPool;
+        }
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder isCompactVersion(final boolean value) {
+        this.isCompactVersion = Option.wrap(value);
+        return this;
+    }
+
+    @Override
+    public Option<Boolean> isCompactVersion() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().isCompactVersion().orAnother(isCompactVersion);
+        } else {
+            return isCompactVersion;
+        }
+    }
+
+    @Override
+    public BindOrderBookOptionsBuilder resetMode(final ResetMode resetMode) {
+        this.resetMode = Option.wrap(resetMode);
+        return this;
+    }
+
+    @Override
+    public Option<ResetMode> getResetMode() {
+        if (otherOptions.hasValue()) {
+            return otherOptions.get().getResetMode().orAnother(resetMode);
+        } else {
+            return resetMode;
+        }
+    }
+
 }

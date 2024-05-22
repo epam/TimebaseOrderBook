@@ -37,8 +37,6 @@ configure(allprojects) {
                     exclude group: "org.apache.commons", name: "commons-lang"
                     exclude group: "com.epam.deltix", name: "containers"
                     exclude group: "com.epam.deltix", name: "hd-date-time"
-                    exclude group: "com.epam.deltix", name: "gflog-api"
-                    exclude group: "com.epam.deltix", name: "gflog-core"
                     exclude group: "com.epam.deltix", name: "dfp"
                 }
             }

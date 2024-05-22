@@ -16,8 +16,11 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.orderbook.core.api.MarketSide;
+import com.epam.deltix.timebase.messages.universal.BookUpdateAction;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.Objects;
 
@@ -34,12 +37,24 @@ interface L2MarketSide<Quote> extends MarketSide<Quote> {
         Objects.requireNonNull(side);
         switch (side) {
             case BID:
-                return new AbstractL2MarketSide.BID<>(initialDepth, (short) maxDepth);
+                return new AbstractL2MarketSide.BID<>(initialDepth, maxDepth);
             case ASK:
-                return new AbstractL2MarketSide.ASK<>(initialDepth, (short) maxDepth);
+                return new AbstractL2MarketSide.ASK<>(initialDepth, maxDepth);
             default:
                 throw new IllegalStateException("Unexpected value: " + side);
         }
+    }
+
+    @Override
+    default Quote getQuote(final CharSequence quoteId) {
+        // Not supported for L2
+        return null;
+    }
+
+    @Override
+    default boolean hasQuote(final CharSequence quoteId) {
+        // Not supported for L2
+        return false;
     }
 
     /**
@@ -48,41 +63,20 @@ interface L2MarketSide<Quote> extends MarketSide<Quote> {
      * @param level  level  to be inserted
      * @param insert quote to be inserted
      */
-    void add(short level, Quote insert);
+    void add(int level, Quote insert);
 
     /**
      * Inserts the specified quote at the end. Shifts the quotes right (adds one to their indices).
      *
      * @param insert quote to be inserted
      */
-    void addLast(Quote insert);
+    void addWorstQuote(Quote insert);
 
-    /**
-     * Inserts the specified quote by price. Shifts the quotes right (adds one to their indices).
-     *
-     * @param insert quote to be inserted
-     */
-    void add(Quote insert);
+    int getMaxDepth();
 
-    short getMaxDepth();
+    int binarySearch(Quote find);
 
-    short binarySearchLevelByPrice(Quote find);
-
-    short binarySearchNextLevelByPrice(Quote find);
-
-    /**
-     * Trims the limit depth of market.
-     * An application can use this operation to minimize the storage of stock quotes.
-     * After trim, we can't add stock quote with level more than limit.
-     */
-    void trim();
-
-    /**
-     * Return worst quote.
-     *
-     * @return last quote
-     */
-    Quote getWorstQuote();
+    int binarySearchNextLevelByPrice(Quote find);
 
     /**
      * Remove worst quote.
@@ -93,6 +87,7 @@ interface L2MarketSide<Quote> extends MarketSide<Quote> {
 
     /**
      * Remove quote by level.
+     * Shifts any subsequent elements to the left.
      *
      * @param level - the level of the quote to be removed
      * @return removed quote
@@ -112,8 +107,37 @@ interface L2MarketSide<Quote> extends MarketSide<Quote> {
      * @param level - quote level to use
      * @return <tt>true</tt> if this quote level is unexpected
      */
-    boolean isGap(final short level);
+    boolean isGap(int level);
+
+
+    boolean isUnreachableLeve(int level);
+
+    /**
+     * Checks if the specified price is sorted.
+     *
+     * @param level - quote level to use
+     * @param price - price to be checked
+     * @return <tt>true</tt> if this price is sorted.
+     */
+    boolean checkOrderPrice(int level, @Decimal long price);
 
     void clear();
 
+    /**
+     * Validates state of market side.
+     *
+     * @return - <tt>true</tt> if state is valid
+     */
+    boolean validateState();
+
+    boolean isInvalidInsert(int level,
+                            @Decimal long price,
+                            @Decimal long size,
+                            @Alphanumeric long exchangeId);
+
+    boolean isInvalidUpdate(BookUpdateAction action,
+                            int level,
+                            @Decimal long price,
+                            @Decimal long size,
+                            @Alphanumeric long exchangeId);
 }

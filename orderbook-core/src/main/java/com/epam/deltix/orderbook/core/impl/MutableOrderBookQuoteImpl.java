@@ -20,15 +20,16 @@ import com.epam.deltix.containers.AlphanumericUtils;
 import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.timebase.messages.TypeConstants;
+import com.epam.deltix.timebase.messages.universal.BasePriceEntryInfo;
+import com.epam.deltix.timebase.messages.universal.PackageHeaderInfo;
+import com.epam.deltix.util.annotations.Alphanumeric;
+
 
 /**
  * @author Andrii_Ostapenko1
  */
 class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
-    /**
-     * Ask, Bid or Trade price in primitive type.
-     */
-    protected double primitivePrice;
+
     /**
      * Ask, Bid or Trade price in decimal format.
      */
@@ -49,6 +50,7 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
      * Exchange code compressed to long using ALPHANUMERIC(10) encoding.
      * see #getExchange()
      */
+    @Alphanumeric
     private long exchangeId;
 
     @Override
@@ -75,7 +77,6 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
     @Override
     public void setPrice(@Decimal final long price) {
         this.price = price;
-        this.primitivePrice = Decimal64Utils.toDouble(price); // TODO Refactor
     }
 
     @Override
@@ -115,15 +116,45 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
     }
 
     @Override
+    public CharSequence getQuoteId() {
+        return null; //TODO refactor
+    }
+
+    @Override
+    public boolean hasQuoteId() {
+        return false; //TODO refactor
+    }
+
+    @Override
+    public CharSequence getParticipantId() {
+        return null; //TODO refactor
+    }
+
+    @Override
+    public boolean hasParticipantId() {
+        return false; //TODO refactor
+    }
+
+    @Override
     public void copyFrom(final MutableOrderBookQuote src) {
-        if (src instanceof MutableOrderBookQuoteImpl) {
-            final MutableOrderBookQuoteImpl quote = (MutableOrderBookQuoteImpl) src;
-            this.size = src.getSize();
-            this.price = src.getPrice();
-            this.exchangeId = src.getExchangeId();
-            this.numberOfOrders = src.getNumberOfOrders();
-            this.primitivePrice = quote.primitivePrice;
+        if (src == null) {
+            return;
         }
+        this.size = src.getSize();
+        this.price = src.getPrice();
+        this.numberOfOrders = src.getNumberOfOrders();
+        this.exchangeId = src.getExchangeId();
+    }
+
+    @Override
+    public void copyFrom(final PackageHeaderInfo pck, final BasePriceEntryInfo src) {
+        if (src == null) {
+            return;
+        }
+        this.size = src.getSize();
+        this.price = src.getPrice();
+        this.numberOfOrders = src.getNumberOfOrders();
+        this.exchangeId = src.getExchangeId();
     }
 
     @Override
@@ -132,7 +163,6 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
         this.price = TypeConstants.DECIMAL_NULL;
         this.exchangeId = TypeConstants.EXCHANGE_NULL;
         this.numberOfOrders = TypeConstants.INT64_NULL;
-        this.primitivePrice = TypeConstants.INT64_NULL;
     }
 
     @Override
@@ -164,10 +194,6 @@ class MutableOrderBookQuoteImpl implements MutableOrderBookQuote {
 
     @Override
     public int compareTo(final MutableOrderBookQuote o) {
-        if (o instanceof MutableOrderBookQuoteImpl) {
-            final MutableOrderBookQuoteImpl quote = (MutableOrderBookQuoteImpl) o;
-            return Double.compare(primitivePrice, quote.primitivePrice);
-        }
         return Decimal64Utils.compareTo(price, o.getPrice());
     }
 }

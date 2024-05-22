@@ -16,8 +16,8 @@
  */
 package com.epam.deltix.orderbook.core.api;
 
-
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 /**
  * Represents the order book entries for a specific stock exchange.
@@ -32,6 +32,7 @@ public interface Exchange<Quote> {
      *
      * @return exchangeId for this exchange.
      */
+    @Alphanumeric
     long getExchangeId();
 
     /**

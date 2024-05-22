@@ -16,12 +16,11 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
-import com.epam.deltix.orderbook.core.options.GapMode;
-import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.orderbook.core.options.Defaults;
+import com.epam.deltix.orderbook.core.options.OrderBookOptions;
 
 /**
  * A factory that implements order book for Level2.
@@ -35,78 +34,72 @@ import com.epam.deltix.orderbook.core.options.UpdateMode;
 public class L2OrderBookFactory {
 
     /**
+     * Prevents instantiation
+     */
+    protected L2OrderBookFactory() {
+    }
+
+    /**
      * Creates OrderBook for single exchange market feed of given initial depth
      *
-     * @param symbol       - type of symbol
-     * @param initialDepth - initial book depth
-     * @param maxDepth     - max order book depth
-     * @param gapMode      - skipped levels mode
-     * @param updateMode   - modes of order book update.
-     * @param <Quote>      - type of quote
+     * @param options -  options to use
+     * @param <Quote> - type of quote
      * @return instance of OrderBook for single exchange
      */
-    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final Option<String> symbol,
-                                                                                        final int initialDepth,
-                                                                                        final int maxDepth,
-                                                                                        final GapMode gapMode,
-                                                                                        final UpdateMode updateMode,
-                                                                                        final UnreachableDepthMode unreachableDepthMode) {
-        final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialDepth, MutableOrderBookQuoteImpl::new);
-        final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2SingleExchangeQuoteProcessor<>(initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
-        return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
+    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final OrderBookOptions options) {
+        final int maxDepth = options.getMaxDepth().orElse(Defaults.MAX_DEPTH);
+        final int depth = options.getInitialDepth().orElse(Math.min(Defaults.INITIAL_DEPTH, maxDepth));
+        final boolean isCompact = options.isCompactVersion().orElse(false);
+
+        final QuoteProcessor<? extends MutableOrderBookQuote> processor;
+        if (isCompact) {
+            processor = new CompactL2SingleExchangeQuoteProcessor<>(options);
+        } else {
+            final ObjectPool<? extends MutableOrderBookQuote> pool =
+                    (ObjectPool<? extends MutableOrderBookQuote>) options.getSharedObjectPool().orElse(QuotePoolFactory.create(options, depth));
+            processor = new L2SingleExchangeQuoteProcessor<>(options, pool);
+        }
+
+        return (OrderBook<Quote>) new OrderBookDecorator<>(options.getSymbol(), processor);
     }
 
     /**
      * Creates OrderBook for market feed from multiple exchanges of given maximum depth.
      * Consolidated book preserve information about quote's exchange.
      *
-     * @param symbol               - type of symbol\
-     * @param initialExchangeCount - initial pool size for stock exchanges
-     * @param initialDepth         - initial book depth
-     * @param maxDepth             - max order book depth
-     * @param gapMode              - skipped levels mode
-     * @param updateMode           - modes of order book update.
-     * @param <Quote>              - type of quote
+     * @param options -  options to use
+     * @param <Quote> - type of quote
      * @return instance of Order Book with multiple exchanges
      */
-    public static <Quote extends OrderBookQuote> OrderBook<Quote> newConsolidatedBook(final Option<String> symbol,
-                                                                                      final int initialExchangeCount,
-                                                                                      final int initialDepth,
-                                                                                      final int maxDepth,
-                                                                                      final GapMode gapMode,
-                                                                                      final UpdateMode updateMode,
-                                                                                      final UnreachableDepthMode unreachableDepthMode) {
-        final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialExchangeCount * initialDepth, MutableOrderBookQuoteImpl::new);
-        final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2ConsolidatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
-        return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
+    public static <Quote extends OrderBookQuote> OrderBook<Quote> newConsolidatedBook(final OrderBookOptions options) {
+        final int maxDepth = options.getMaxDepth().orElse(Defaults.MAX_DEPTH);
+        final int depth = options.getInitialDepth().orElse(Math.min(Defaults.INITIAL_DEPTH, maxDepth));
+        final int exchanges = options.getInitialExchangesPoolSize().orElse(Defaults.INITIAL_EXCHANGES_POOL_SIZE);
+
+        final ObjectPool<? extends MutableOrderBookQuote> pool = (ObjectPool<? extends MutableOrderBookQuote>) options.getSharedObjectPool()
+                        .orElse(QuotePoolFactory.create(options, exchanges * depth));
+
+        final QuoteProcessor<? extends MutableOrderBookQuote> processor = new L2ConsolidatedQuoteProcessor<>(options, pool);
+        return (OrderBook<Quote>) new OrderBookDecorator<>(options.getSymbol(), processor);
     }
 
     /**
      * Creates OrderBook for market feed from multiple exchanges of given maximum depth.
      * Aggregated order book groups quotes from multiple exchanges by price.
      *
-     * @param symbol               - type of symbol\
-     * @param initialExchangeCount - initial pool size for stock exchanges
-     * @param initialDepth         - initial book depth
-     * @param maxDepth             - max order book depth
-     * @param gapMode              - skipped levels mode
-     * @param updateMode           - modes of order book update.
-     * @param <Quote>              - type of quote
+     * @param options -  options to use
+     * @param <Quote> - type of quote
      * @return instance of Order Book with multiple exchanges
      */
-    public static <Quote extends OrderBookQuote> OrderBook<Quote> newAggregatedBook(final Option<String> symbol,
-                                                                                    final int initialExchangeCount,
-                                                                                    final int initialDepth,
-                                                                                    final int maxDepth,
-                                                                                    final GapMode gapMode,
-                                                                                    final UpdateMode updateMode,
-                                                                                    final UnreachableDepthMode unreachableDepthMode) {
-        final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialExchangeCount * initialDepth * 4, MutableOrderBookQuoteImpl::new);
-        final QuoteProcessor<MutableOrderBookQuote> processor =
-                new L2AggregatedQuoteProcessor<>(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
-        return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
-    }
+    public static <Quote extends OrderBookQuote> OrderBook<Quote> newAggregatedBook(final OrderBookOptions options) {
+        final int maxDepth = options.getMaxDepth().orElse(Defaults.MAX_DEPTH);
+        final int depth = options.getInitialDepth().orElse(Math.min(Defaults.INITIAL_DEPTH, maxDepth));
+        final int exchanges = options.getInitialExchangesPoolSize().orElse(Defaults.INITIAL_EXCHANGES_POOL_SIZE);
 
+        final ObjectPool<? extends MutableOrderBookQuote> pool = (ObjectPool<? extends MutableOrderBookQuote>) options.getSharedObjectPool()
+                        .orElse(QuotePoolFactory.create(options, exchanges * depth * 4));
+
+        final QuoteProcessor<? extends MutableOrderBookQuote> processor = new L2AggregatedQuoteProcessor<>(options, pool);
+        return (OrderBook<Quote>) new OrderBookDecorator<>(options.getSymbol(), processor);
+    }
 }

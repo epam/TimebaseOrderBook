@@ -22,6 +22,7 @@ import com.epam.deltix.orderbook.core.api.OrderBookQuote;
 import com.epam.deltix.timebase.messages.universal.*;
 import com.epam.deltix.util.collections.generated.ObjectArrayList;
 
+
 /**
  * @author Andrii_Ostapenko1
  */

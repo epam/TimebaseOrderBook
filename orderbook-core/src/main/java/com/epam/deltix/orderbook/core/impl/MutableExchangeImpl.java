@@ -16,9 +16,11 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.containers.AlphanumericUtils;
 import com.epam.deltix.orderbook.core.api.MarketSide;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -29,10 +31,11 @@ import java.util.StringJoiner;
 public class MutableExchangeImpl<Quote, Processor extends QuoteProcessor<Quote>>
         implements MutableExchange<Quote, Processor> {
 
+    @Alphanumeric
     private final long exchangeId;
     private final Processor processor;
 
-    public MutableExchangeImpl(final long exchangeId,
+    public MutableExchangeImpl(@Alphanumeric final long exchangeId,
                                final Processor processor) {
         Objects.requireNonNull(processor);
         this.exchangeId = exchangeId;
@@ -40,6 +43,7 @@ public class MutableExchangeImpl<Quote, Processor extends QuoteProcessor<Quote>>
     }
 
     @Override
+    @Alphanumeric
     public long getExchangeId() {
         return exchangeId;
     }
@@ -52,6 +56,11 @@ public class MutableExchangeImpl<Quote, Processor extends QuoteProcessor<Quote>>
     @Override
     public Processor getProcessor() {
         return processor;
+    }
+
+    @Override
+    public boolean isWaitingForSnapshot() {
+        return processor.isWaitingForSnapshot();
     }
 
     @Override

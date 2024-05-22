@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.Exchange;
 
 /**
@@ -29,5 +30,12 @@ interface MutableExchange<Quote, Processor> extends Exchange<Quote> {
      * @return quote processor . never {@code null}
      */
     Processor getProcessor();
+
+    /**
+     * @return true if order book is waiting for snapshot to recover.
+     * In this state order book appears empty, but corresponding exchange is likely not empty.
+     * Order book may be in this state initially, or after we market data disconnect, as well as after internal error.
+     */
+    boolean isWaitingForSnapshot();
 
 }

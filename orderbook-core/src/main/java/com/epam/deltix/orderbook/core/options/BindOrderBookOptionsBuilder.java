@@ -16,6 +16,10 @@
  */
 package com.epam.deltix.orderbook.core.options;
 
+
+import com.epam.deltix.orderbook.core.api.ErrorListener;
+import com.epam.deltix.orderbook.core.api.OrderBookQuote;
+import com.epam.deltix.orderbook.core.impl.ObjectPool;
 import com.epam.deltix.timebase.messages.universal.DataModelType;
 
 /**
@@ -62,6 +66,16 @@ public interface BindOrderBookOptionsBuilder {
     BindOrderBookOptionsBuilder updateMode(UpdateMode mode);
 
     /**
+     * What do we do with periodical snapshots?
+     *
+     * @param mode to use
+     * @return builder
+     * @see Defaults#PERIODICAL_SNAPSHOT_MODE
+     * @see com.epam.deltix.timebase.messages.universal.PackageType##PERIODICAL_SNAPSHOT
+     */
+    BindOrderBookOptionsBuilder periodicalSnapshotMode(PeriodicalSnapshotMode mode);
+
+    /**
      * Quote levels to use.
      *
      * @param type to use
@@ -71,6 +85,23 @@ public interface BindOrderBookOptionsBuilder {
     BindOrderBookOptionsBuilder quoteLevels(DataModelType type);
 
     /**
+     * Should store timestamps of quote updates?
+     * If you enable this option, additional memory will be allocated for timestamps in each quote.
+     *
+     * <p>
+     * When this option is enabled, you may use {@link OrderBookQuote#getOriginalTimestamp()} to get original quote timestamp
+     * and {@link OrderBookQuote#getTimestamp()} to get timestamp of order book update. For checking if quote has timestamped
+     * you may use {@link OrderBookQuote#hasOriginalTimestamp()} and {@link OrderBookQuote#hasTimestamp()}.
+     * <p>
+     * By default, this option is disabled.
+     *
+     * @param value flag
+     * @return builder
+     * @see com.epam.deltix.orderbook.core.api.OrderBookQuoteTimestamp
+     */
+    BindOrderBookOptionsBuilder shouldStoreQuoteTimestamps(boolean value);
+
+    /**
      * Order book type to use.
      *
      * @param type to use
@@ -78,18 +109,6 @@ public interface BindOrderBookOptionsBuilder {
      * @see Defaults#ORDER_BOOK_TYPE
      */
     BindOrderBookOptionsBuilder orderBookType(OrderBookType type);
-
-    /**
-     * What do we do if we have a gap between the last existing level and the current inserted level (empty levels in between)?.
-     * <p>
-     * Supported for L2 quote level.
-     *
-     * @param mode to use
-     * @return builder
-     * @see Defaults#GAP_MODE
-     * @see GapMode
-     */
-    BindOrderBookOptionsBuilder gapMode(GapMode mode);
 
     /**
      * How large initial depth of market should be?
@@ -113,15 +132,15 @@ public interface BindOrderBookOptionsBuilder {
     BindOrderBookOptionsBuilder maxDepth(int value);
 
     /**
-     * What do we do if we have quote level more than maxDepth?.
-     * Supported for L2 quote level
+     * What do we do with invalid packets?
+     * Supported for L2/L1 quote level
      *
      * @param mode to use.
      * @return builder
-     * @see Defaults#UNREACHABLE_DEPTH_MODE
-     * @see UnreachableDepthMode
+     * @see Defaults#VALIDATION_OPTIONS
+     * @see ValidationOptions
      */
-    BindOrderBookOptionsBuilder unreachableDepthMode(UnreachableDepthMode mode);
+    BindOrderBookOptionsBuilder validationOptions(ValidationOptions mode);
 
     /**
      * How large initial pool size for stock exchanges should be?
@@ -135,4 +154,52 @@ public interface BindOrderBookOptionsBuilder {
      */
     BindOrderBookOptionsBuilder initialExchangesPoolSize(int value);
 
+    /**
+     * How order book will react on disconnect market data event
+     *
+     * @param mode to use
+     * @see Defaults#DISCONNECT_MODE
+     * @return builder
+     */
+    BindOrderBookOptionsBuilder disconnectMode(DisconnectMode mode);
+
+    /**
+     * How order book will processing increment update after reset market data event
+     *
+     * @param mode to use
+     * @see Defaults#RESET_MODE
+     * @return builder
+     */
+    BindOrderBookOptionsBuilder resetMode(ResetMode mode);
+
+    /**
+     * Custom error logging
+     *
+     * @param errorListener custom error listener
+     * @return builder
+     */
+    BindOrderBookOptionsBuilder errorListener(ErrorListener errorListener);
+
+    //TODO add javadoc
+    BindOrderBookOptionsBuilder sharedQuotePool(int initialSize);
+
+    //TODO This method may not make sense
+
+    /**
+     * When defined allows sharing pool of OrderBookQuote objects between multiple order books
+     * @param sharedObjectPool shared object pool to use
+     * @return builder
+     */
+    BindOrderBookOptionsBuilder sharedQuotePool(ObjectPool<? extends OrderBookQuote> sharedObjectPool);
+
+    /**
+     * Use compact version of order book?
+     * If you enable this option, order book will only store prices and sizes in one array (and therefore should be faster)
+     * <p>
+     * By default, this option is disabled.
+     *
+     * @param value flag
+     * @return builder
+     */
+    BindOrderBookOptionsBuilder isCompactVersion(boolean value);
 }

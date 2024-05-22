@@ -16,8 +16,10 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.Exchange;
 import com.epam.deltix.orderbook.core.options.Option;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.*;
 
@@ -49,7 +51,15 @@ class MutableExchangeListImpl<Quote, StockExchange extends Exchange<Quote>>
     }
 
     @Override
-    public Option<StockExchange> getById(final long exchangeId) {
+    public Option<StockExchange> getById(@Alphanumeric final long exchangeId) {
+        if (data.size() == 1) {
+            final Option<StockExchange> exchange = data.get(0);
+            if (exchange.get().getExchangeId() == exchangeId) {
+                return exchange;
+            } else {
+                return Option.empty();
+            }
+        }
         for (int i = 0; i < data.size(); i++) {
             final Option<StockExchange> exchange = data.get(i);
             if (exchange.get().getExchangeId() == exchangeId) {
@@ -79,7 +89,7 @@ class MutableExchangeListImpl<Quote, StockExchange extends Exchange<Quote>>
 
         private final List<Option<StockExchange>> data;
 
-        private short cursor;
+        private int cursor;
 
         ReusableIterator(final List<Option<StockExchange>> data) {
             this.data = data;
@@ -105,7 +115,7 @@ class MutableExchangeListImpl<Quote, StockExchange extends Exchange<Quote>>
 
         @Override
         public void remove() {
-            throw new UnsupportedOperationException("Read only iterator");
+            throw new UnsupportedOperationException("Remove is not supported for this iterator implementation!");
         }
     }
 }

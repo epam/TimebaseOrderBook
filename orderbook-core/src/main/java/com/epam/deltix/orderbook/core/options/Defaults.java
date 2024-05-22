@@ -16,6 +16,8 @@
  */
 package com.epam.deltix.orderbook.core.options;
 
+
+import com.epam.deltix.orderbook.core.api.ErrorListener;
 import com.epam.deltix.timebase.messages.universal.DataModelType;
 
 /**
@@ -36,19 +38,24 @@ public final class Defaults {
     public static final UpdateMode UPDATE_MODE = UpdateMode.WAITING_FOR_SNAPSHOT;
 
     /**
+     * Default {@link PeriodicalSnapshotMode}.
+     */
+    public static final PeriodicalSnapshotMode PERIODICAL_SNAPSHOT_MODE = PeriodicalSnapshotMode.PROCESS_ALL;
+
+    /**
      * Default {@link DataModelType}.
      */
     public static final DataModelType QUOTE_LEVELS = DataModelType.LEVEL_ONE;
 
     /**
+     * Should Order book store timestamps of quote updates?
+     */
+    public static final boolean SHOULD_STORE_QUOTE_TIMESTAMPS = false;
+
+    /**
      * Default {@link OrderBookType}.
      */
     public static final OrderBookType ORDER_BOOK_TYPE = OrderBookType.SINGLE_EXCHANGE;
-
-    /**
-     * Default {@link GapMode}.
-     */
-    public static final GapMode GAP_MODE = GapMode.SKIP;
 
     /**
      * The initial depth of market.
@@ -61,13 +68,27 @@ public final class Defaults {
     public static final Integer MAX_DEPTH = 32767;
 
     /**
-     * Default {@link UnreachableDepthMode}.
+     * Default {@link ValidationOptions}.
      */
-    public static final UnreachableDepthMode UNREACHABLE_DEPTH_MODE = UnreachableDepthMode.SKIP;
+    public static final ValidationOptions VALIDATION_OPTIONS = ValidationOptions.ALL_ENABLED;
+
+    /**
+     * Default {@link ResetMode}.
+     */
+    public static final ResetMode RESET_MODE = ResetMode.NON_WAITING_FOR_SNAPSHOT;
 
     /**
      * Initial pool size for stock exchanges.
      */
     public static final Integer INITIAL_EXCHANGES_POOL_SIZE = 1;
+
+    /**
+     * Default {@link DisconnectMode}.
+     */
+    public static final DisconnectMode DISCONNECT_MODE = DisconnectMode.CLEAR_EXCHANGE;
+
+    public static final ErrorListener DEFAULT_ERROR_LISTENER = (message, errorCode)
+            -> System.err.println("Error parsing message for " + message.getSymbol() + " at " + message.getTimeStampMs() + ": " + errorCode);
+
 
 }

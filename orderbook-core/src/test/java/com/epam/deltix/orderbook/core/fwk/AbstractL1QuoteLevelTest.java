@@ -18,15 +18,20 @@ package com.epam.deltix.orderbook.core.fwk;
 
 import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.dfp.Decimal64Utils;
-import com.epam.deltix.orderbook.core.options.OrderBookOptions;
-import com.epam.deltix.orderbook.core.options.OrderBookOptionsBuilder;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+
+import com.epam.deltix.orderbook.core.api.OrderBookQuoteTimestamp;
+import com.epam.deltix.orderbook.core.options.*;
+import com.epam.deltix.timebase.messages.service.FeedStatus;
 import com.epam.deltix.timebase.messages.universal.PackageType;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static com.epam.deltix.timebase.messages.universal.PackageType.PERIODICAL_SNAPSHOT;
+import static com.epam.deltix.timebase.messages.universal.PackageType.VENDOR_SNAPSHOT;
+
 
 /**
  * @author Andrii_Ostapenko1
@@ -103,14 +108,187 @@ public abstract class AbstractL1QuoteLevelTest extends AbstractOrderBookTest {
 
     @ParameterizedTest
     @MethodSource("quoteProvider")
+    public void shouldStoreQuoteTimestamp_L1Quote(final int bbo,
+                                                  final QuoteSide side,
+                                                  @Decimal final long price,
+                                                  @Decimal final long size,
+                                                  final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .shouldStoreQuoteTimestamps(true)
+                .build();
+        createBook(opt);
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        getBook().getMarketSide(side)
+                .forEach(q -> {
+                    Assertions.assertTrue(q.hasOriginalTimestamp());
+                    Assertions.assertTrue(q.getOriginalTimestamp() != OrderBookQuoteTimestamp.TIMESTAMP_UNKNOWN);
+                    Assertions.assertTrue(q.hasTimestamp());
+                    Assertions.assertTrue(q.getTimestamp() != OrderBookQuoteTimestamp.TIMESTAMP_UNKNOWN);
+                });
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void shouldNotStoreQuoteTimestamp_L1Quote(final int bbo,
+                                                  final QuoteSide side,
+                                                  @Decimal final long price,
+                                                  @Decimal final long size,
+                                                  final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .shouldStoreQuoteTimestamps(false)
+                .build();
+        createBook(opt);
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        getBook().getMarketSide(side)
+                .forEach(q -> {
+                    Assertions.assertFalse(q.hasOriginalTimestamp());
+                    Assertions.assertEquals(OrderBookQuoteTimestamp.TIMESTAMP_UNKNOWN, q.getOriginalTimestamp());
+                    Assertions.assertFalse(q.hasTimestamp());
+                    Assertions.assertEquals(OrderBookQuoteTimestamp.TIMESTAMP_UNKNOWN, q.getTimestamp());
+                });
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
     public void incrementalUpdate_Insert_L1Quote_invalidSymbol(final int bbo,
                                                                final QuoteSide side,
                                                                @Decimal final long price,
                                                                @Decimal final long size,
                                                                final long numberOfOrders) {
         Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, BINANCE, side, price, size, numberOfOrders));
-        simulateL1QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
         Assertions.assertFalse(simulateL1Insert(LTC_SYMBOL, BINANCE, side, price, size, numberOfOrders));
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void securityStatusMessage_L2Quote(final int bbo,
+                                              final QuoteSide side,
+                                              @Decimal final long price,
+                                              @Decimal final long size,
+                                              final long numberOfOrders) {
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+
+        simulateSecurityFeedStatus(COINBASE, FeedStatus.NOT_AVAILABLE);
+        assertExchangeBookSizeIsEmpty(COINBASE, side); // make sure book is clean
+
+        simulateL1Insert(DEFAULT_SYMBOL, COINBASE, side, price, size, numberOfOrders);
+        assertExchangeBookSizeIsEmpty(COINBASE, side); // make sure insert is ignored (we are waiting for snapshot)
+
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        assertBookSize(side, 1);
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void resetEntry_L1Quote_NoWaitingSnapshot(final int bbo,
+                                                     final QuoteSide side,
+                                                     @Decimal final long price,
+                                                     @Decimal final long size,
+                                                     final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .resetMode(ResetMode.NON_WAITING_FOR_SNAPSHOT)
+                .build();
+        createBook(opt);
+
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        assertExchangeBookSizeIsEmpty(COINBASE, side); // make sure book is clean
+
+        simulateL1Insert(DEFAULT_SYMBOL, COINBASE, side, price, size, numberOfOrders);
+        assertExchangeBookSize(COINBASE, side, 1); // make sure insert is not ignored
+
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        assertBookSize(side, 1);
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void resetEntry_L1Quote_WaitingSnapshot(final int bbo,
+                                                   final QuoteSide side,
+                                                   @Decimal final long price,
+                                                   @Decimal final long size,
+                                                   final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .resetMode(ResetMode.WAITING_FOR_SNAPSHOT)
+                .build();
+        createBook(opt);
+
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        assertExchangeBookSizeIsEmpty(COINBASE, side); // make sure book is clean
+
+        simulateL1Insert(DEFAULT_SYMBOL, COINBASE, side, price, size, numberOfOrders);
+        assertExchangeBookSizeIsEmpty(COINBASE, side); // make sure insert is ignored
+
+        simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders);
+        assertBookSize(side, 1);
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void resetEntry_L1Quote_PeriodicalSnapshotMode_ONLY_ONE(final int bbo,
+                                                                   final QuoteSide side,
+                                                                   @Decimal final long price,
+                                                                   @Decimal final long size,
+                                                                   final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .periodicalSnapshotMode(PeriodicalSnapshotMode.ONLY_ONE)
+                .build();
+        createBook(opt);
+
+        Assertions.assertTrue(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        assertBookSize(side, 1);
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        Assertions.assertTrue(simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        simulateL1Insert(DEFAULT_SYMBOL, COINBASE, side, price, size, numberOfOrders);
+        Assertions.assertTrue(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void resetEntry_L1Quote_PeriodicalSnapshotMode_PROCESS_ALL(final int bbo,
+                                                                      final QuoteSide side,
+                                                                      @Decimal final long price,
+                                                                      @Decimal final long size,
+                                                                      final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .periodicalSnapshotMode(PeriodicalSnapshotMode.PROCESS_ALL)
+                .build();
+        createBook(opt);
+
+        Assertions.assertTrue(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        Assertions.assertTrue(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        Assertions.assertTrue(simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        Assertions.assertTrue(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+    }
+
+    @ParameterizedTest
+    @MethodSource("quoteProvider")
+    public void resetEntry_L1Quote_PeriodicalSnapshotMode_SKIP_ALL(final int bbo,
+                                                                   final QuoteSide side,
+                                                                   @Decimal final long price,
+                                                                   @Decimal final long size,
+                                                                   final long numberOfOrders) {
+        final OrderBookOptions opt = new OrderBookOptionsBuilder()
+                .periodicalSnapshotMode(PeriodicalSnapshotMode.SKIP_ALL)
+                .build();
+        createBook(opt);
+
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        Assertions.assertTrue(simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
+        simulateResetEntry(COINBASE, VENDOR_SNAPSHOT);
+        simulateL1Insert(DEFAULT_SYMBOL, COINBASE, side, price, size, numberOfOrders);
+        Assertions.assertFalse(simulateL1QuoteSnapshot(PERIODICAL_SNAPSHOT, COINBASE, bbo, size, numberOfOrders));
     }
 
 }

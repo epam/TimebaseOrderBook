@@ -19,12 +19,17 @@ package com.epam.deltix.orderbook.core.impl;
 import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.dfp.Decimal64Utils;
 import com.epam.deltix.orderbook.core.api.MarketSide;
+import com.epam.deltix.timebase.messages.universal.BookUpdateAction;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+
+import static com.epam.deltix.dfp.Decimal64Utils.*;
+import static com.epam.deltix.timebase.messages.TypeConstants.EXCHANGE_NULL;
 
 /**
  * @author Andrii_Ostapenko1
@@ -33,21 +38,17 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     protected final List<Quote> data;
     private final ReusableIterator<Quote> itr;
-    // This parameter is used to limit maximum elements.
-    private final short maxDepth;
-    // This parameter is used to understand whether the side is full or not.
-    private short depthLimit;
+    // This parameter is used to limit maximum elements and to understand whether the side is full or not.
+    private final int maxDepth;
 
-    AbstractL2MarketSide(final int initialCapacity,
-                         final short maxDepth) {
+    AbstractL2MarketSide(final int initialCapacity, final int maxDepth) {
         this.maxDepth = maxDepth;
-        this.depthLimit = maxDepth;
         this.data = new ArrayList<>(initialCapacity);
         this.itr = new ReusableIterator<>();
     }
 
     @Override
-    public short getMaxDepth() {
+    public int getMaxDepth() {
         return maxDepth;
     }
 
@@ -59,8 +60,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     //TODO Add configuration parameter for type of calculating total quantity
     @Override
     public long getTotalQuantity() {
-        @Decimal
-        long result = Decimal64Utils.ZERO;
+        @Decimal long result = ZERO;
         for (int i = 0; i < data.size(); i++) {
             result = Decimal64Utils.add(result, data.get(i).getSize());
         }
@@ -79,37 +79,32 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public Quote getQuote(final int level) {
-        if (!hasLevel((short) level)) {
+        if (!hasLevel(level)) {
             return null;
         }
         return data.get(level);
     }
 
     @Override
-    public void add(final short level, final Quote insert) {
+    public void add(final int level, final Quote insert) {
         data.add(level, insert);
     }
 
     @Override
-    public void addLast(final Quote insert) {
-        data.add(insert);
-    }
-
-    @Override
-    public void add(final Quote insert) {
+    public void addWorstQuote(final Quote insert) {
         data.add(insert);
     }
 
     @Override
     public Quote remove(final int level) {
-        if (!hasLevel((short) level)) {
+        if (!hasLevel(level)) {
             return null;
         }
         return data.remove(level);
     }
 
     @Override
-    public short binarySearchLevelByPrice(final Quote find) {
+    public int binarySearch(final Quote find) {
         int low = 0;
         int high = data.size() - 1;
 
@@ -149,14 +144,14 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
                     high = mid - 1;
                 }
             } else {
-                return (short) mid;
+                return mid;
             }
         }
         return NOT_FOUND;
     }
 
     @Override
-    public short binarySearchNextLevelByPrice(final Quote find) {
+    public int binarySearchNextLevelByPrice(final Quote find) {
         int low = 0;
         int high = data.size() - 1;
 
@@ -196,28 +191,18 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
                     high = mid - 1;
                 }
             } else {
-                return (short) mid;
+                return mid;
             }
         }
-        return (short) low;
+        return low;
     }
 
     @Override
-    public boolean hasLevel(final short level) {
-        if (data.size() > level) {
+    public boolean hasLevel(final int level) {
+        if (level >= 0 && data.size() > level) {
             return Objects.nonNull(data.get(level));
         }
         return false;
-    }
-
-    @Override
-    public void trim() {
-        this.depthLimit = (short) data.size();
-    }
-
-    @Override
-    public Quote getWorstQuote() {
-        return data.get(data.size() - 1);
     }
 
     @Override
@@ -227,13 +212,18 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     @Override
     public boolean isFull() {
-        return depth() >= depthLimit;
+        return depth() >= maxDepth;
     }
 
     //TODO add doc !!
     @Override
-    public boolean isGap(final short level) {
+    public boolean isGap(final int level) {
         return !hasLevel(level) && level > depth();
+    }
+
+    @Override
+    public boolean isUnreachableLeve(int level) {
+        return level < 0 || level >= getMaxDepth();
     }
 
     @Override
@@ -242,6 +232,90 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
             return null;
         }
         return data.get(0);
+    }
+
+    @Override
+    public Quote getWorstQuote() {
+        if (!isEmpty()) {
+            return data.get(data.size() - 1);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isInvalidInsert(final int level, final @Decimal long price, final @Decimal long size, final @Alphanumeric long exchangeId) {
+        //TODO need to defined default type for internal decimal
+        if (level < 0 || isEqual(price, NULL) || isLessOrEqual(size, ZERO) || exchangeId == EXCHANGE_NULL) {
+            return true;
+        }
+        if (isUnreachableLeve(level)) {
+            return true;
+        }
+        if (isGap(level)) {
+            return true;
+        }
+        return !checkOrderPrice(level, price);
+    }
+
+    @Override
+    public boolean isInvalidUpdate(final BookUpdateAction action,
+                                   final int level,
+                                   final @Decimal long price,
+                                   final @Decimal long size,
+                                   final @Alphanumeric long exchangeId) {
+        if (!hasLevel(level)) {
+            return true;
+        }
+        if (action != BookUpdateAction.DELETE) {
+            return isNotEqual(getQuote(level).getPrice(), price) || isLess(size, ZERO);
+        }
+        return false;
+    }
+
+    /**
+     * Checking the insertion of the quotation price.
+     * @param level - quote level to use
+     * @param price - price to be checked
+     * @return <tt>true</tt> if this price is sorted.
+     */
+    @Override
+    public boolean checkOrderPrice(final int level, final @Decimal long price) {
+
+        @Decimal final long previousPrice = hasLevel(level - 1) ? getQuote(level - 1).getPrice() : NULL;
+        @Decimal final long nextPrice = hasLevel(level) ? getQuote(level).getPrice() : NULL;
+
+        boolean badState = false;
+        if (getSide() == QuoteSide.ASK) {
+            if (isNotEqual(previousPrice, NULL) && isGreater(previousPrice, price)) {
+                badState = true;
+            }
+            if (isNotEqual(nextPrice, NULL) && isLess(nextPrice, price)) {
+                badState = true;
+            }
+        } else {
+            if (isNotEqual(previousPrice, NULL) && isLess(previousPrice, price)) {
+                badState = true;
+            }
+            if (isNotEqual(nextPrice, NULL) && isGreater(nextPrice, price)) {
+                badState = true;
+            }
+        }
+        return !badState;
+    }
+
+    @Override
+    public boolean validateState() {
+        if (isEmpty()) {
+            return true;
+        }
+        for (int i = 0; i < depth(); i++) {
+            final Quote quote = getQuote(i);
+            if (isInvalidInsert(i, quote.getPrice(), quote.getSize(), quote.getExchangeId())) {
+                //TODO add log
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -254,7 +328,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
     }
 
     @Override
-    public Iterator<Quote> iterator(final short fromLevel, final short toLevel) {
+    public Iterator<Quote> iterator(final int fromLevel, final int toLevel) {
         itr.iterateBy(this, fromLevel, toLevel);
         return itr;
     }
@@ -267,18 +341,18 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
         /**
          * Index of element to be returned by subsequent call to next.
          */
-        private short cursor;
+        private int cursor;
 
-        private short size;
+        private int size;
 
         private MarketSide<Quote> marketSide;
 
-        private void iterateBy(final MarketSide<Quote> marketSide, final short cursor, final short size) {
+        private void iterateBy(final MarketSide<Quote> marketSide, final int cursor, final int size) {
             Objects.requireNonNull(marketSide);
             this.marketSide = marketSide;
             this.cursor = cursor;
             if (size > marketSide.depth() || size < 0) {
-                this.size = (short) marketSide.depth();
+                this.size = marketSide.depth();
             } else {
                 this.size = size;
             }
@@ -305,7 +379,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     static class ASK<Quote extends MutableOrderBookQuote> extends AbstractL2MarketSide<Quote> {
 
-        ASK(final int initialCapacity, final short maxDepth) {
+        ASK(final int initialCapacity, final int maxDepth) {
             super(initialCapacity, maxDepth);
         }
 
@@ -318,7 +392,7 @@ abstract class AbstractL2MarketSide<Quote extends MutableOrderBookQuote> impleme
 
     static class BID<Quote extends MutableOrderBookQuote> extends AbstractL2MarketSide<Quote> {
 
-        BID(final int initialDepth, final short maxDepth) {
+        BID(final int initialDepth, final int maxDepth) {
             super(initialDepth, maxDepth);
         }
 

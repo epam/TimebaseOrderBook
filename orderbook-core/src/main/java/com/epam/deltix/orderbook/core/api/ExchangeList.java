@@ -17,6 +17,7 @@
 package com.epam.deltix.orderbook.core.api;
 
 import com.epam.deltix.orderbook.core.options.Option;
+import com.epam.deltix.util.annotations.Alphanumeric;
 
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -30,7 +31,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Andrii_Ostapenko1
  */
-public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
+public interface ExchangeList<Exchange> extends Iterable<Exchange> {
 
     /**
      * Get exchange holder by id.
@@ -40,7 +41,7 @@ public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
      * @return an {@code Optional} containing the exchange holder; never {@code null} but
      * potentially empty
      */
-    Option<StockExchange> getById(long exchangeId);
+    Option<Exchange> getById(@Alphanumeric long exchangeId);
 
     /**
      * Returns the number of elements in this list.
@@ -69,7 +70,7 @@ public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
      * @see Stream
      * @see java.util.Spliterator
      */
-    default Stream<StockExchange> stream(final boolean parallel) {
+    default Stream<Exchange> stream(final boolean parallel) {
         return StreamSupport.stream(spliterator(), parallel);
     }
 
@@ -83,21 +84,21 @@ public interface ExchangeList<StockExchange> extends Iterable<StockExchange> {
      * @see Stream
      * @see java.util.Spliterator
      */
-    default Stream<StockExchange> stream() {
+    default Stream<Exchange> stream() {
         return stream(false);
     }
 
-    default void forEach(final Predicate<StockExchange> action) {
-        for (final StockExchange e : this) {
+    default void forEach(final Predicate<Exchange> action) {
+        for (final Exchange e : this) {
             if (!action.test(e)) {
                 return;
             }
         }
     }
 
-    default <Cookie> void forEach(final BiPredicate<StockExchange, Cookie> action,
+    default <Cookie> void forEach(final BiPredicate<Exchange, Cookie> action,
                                   final Cookie cookie) {
-        for (final StockExchange e : this) {
+        for (final Exchange e : this) {
             if (!action.test(e, cookie)) {
                 return;
             }

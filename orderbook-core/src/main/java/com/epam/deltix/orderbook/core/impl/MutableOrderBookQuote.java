@@ -18,6 +18,10 @@ package com.epam.deltix.orderbook.core.impl;
 
 import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
+import com.epam.deltix.timebase.messages.universal.BasePriceEntryInfo;
+import com.epam.deltix.timebase.messages.universal.PackageHeaderInfo;
+import com.epam.deltix.util.annotations.Alphanumeric;
+
 
 /**
  * ReadWrite interface for Quote(the smallest element in order book).
@@ -31,14 +35,14 @@ interface MutableOrderBookQuote extends OrderBookQuote, Comparable<MutableOrderB
      *
      * @param price - Price
      */
-    void setPrice(@Decimal final long price);
+    void setPrice(@Decimal long price);
 
     /**
      * Ask, Bid or Trade quantity.
      *
      * @param size - Size
      */
-    void setSize(@Decimal final long size);
+    void setSize(@Decimal long size);
 
     /**
      * Exchange code compressed to long using ALPHANUMERIC(10) encoding.
@@ -46,21 +50,47 @@ interface MutableOrderBookQuote extends OrderBookQuote, Comparable<MutableOrderB
      *
      * @param exchangeId - Exchange Code
      */
-    void setExchangeId(final long exchangeId);
+    void setExchangeId(@Alphanumeric long exchangeId);
 
     /**
      * Numbers of orders.
      *
      * @param numberOfOrders - Number Of Orders
      */
-    void setNumberOfOrders(final long numberOfOrders);
+    void setNumberOfOrders(long numberOfOrders);
+
+
+    default void setTimestamp(long timestamp) {
+        //do nothing
+    }
+
+    default void setOriginalTimestamp(long timestamp) {
+        //do nothing
+    }
+
+    default long getSequenceNumber() {
+        // return nothing
+        return Long.MIN_VALUE;
+    }
+
+    default void setSequenceNumber(long timestamp) {
+        // do nothing
+    }
 
     /**
      * Method copies state to a given instance
      *
-     * @param template class instance that should be used as a copy source
+     * @param src class instance that should be used as a copy source
      */
-    void copyFrom(final MutableOrderBookQuote template);
+    void copyFrom(MutableOrderBookQuote src);
+
+    /**
+     * Method copies state to a given instance
+     *
+     * @param pck
+     * @param src - BasePriceEntryInfo
+     */
+    void copyFrom(PackageHeaderInfo pck, BasePriceEntryInfo src);
 
     /**
      * Resets all instance properties to their default values

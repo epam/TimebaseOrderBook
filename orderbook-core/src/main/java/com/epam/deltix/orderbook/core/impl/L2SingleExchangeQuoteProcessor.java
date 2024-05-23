@@ -16,15 +16,18 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
-import com.epam.deltix.orderbook.core.options.GapMode;
-import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.containers.AlphanumericUtils;
+import com.epam.deltix.orderbook.core.options.*;
+import com.epam.deltix.timebase.messages.TypeConstants;
+import com.epam.deltix.timebase.messages.service.FeedStatus;
+import com.epam.deltix.timebase.messages.service.SecurityFeedStatusMessage;
 import com.epam.deltix.timebase.messages.universal.*;
+import com.epam.deltix.util.annotations.Alphanumeric;
 import com.epam.deltix.util.collections.generated.ObjectList;
 
 import static com.epam.deltix.timebase.messages.universal.QuoteSide.ASK;
 import static com.epam.deltix.timebase.messages.universal.QuoteSide.BID;
+
 
 /**
  * @author Andrii_Ostapenko1
@@ -35,45 +38,32 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
 
     protected final L2MarketSide<Quote> bids;
     protected final L2MarketSide<Quote> asks;
-
     private final MutableExchangeList<MutableExchange<Quote, L2Processor<Quote>>> exchanges;
 
+    private final EventHandler eventHandler;
+
     //Parameters
-    private final GapMode gapMode;
+    private final ValidationOptions validationOptions;
+    private final DisconnectMode disconnectMode;
 
-    private final UnreachableDepthMode unreachableDepthMode;
-    private final UpdateMode updateMode;
+    public L2SingleExchangeQuoteProcessor(final OrderBookOptions options, final ObjectPool<Quote> pool) {
+        this.disconnectMode = options.getDisconnectMode().orElse(Defaults.DISCONNECT_MODE);
+        this.validationOptions = options.getInvalidQuoteMode().orElse(Defaults.VALIDATION_OPTIONS);
+        this.eventHandler = new EventHandlerImpl(options);
 
-    /**
-     * This parameter using for handle book reset entry.
-     *
-     * @see QuoteProcessor#isWaitingForSnapshot()
-     */
-    private boolean isWaitingForSnapshot = false;
+        this.pool = pool;
+        this.exchanges = new MutableExchangeListImpl<>();
 
-    public L2SingleExchangeQuoteProcessor(final int initialDepth,
-                                          final int maxDepth,
-                                          final ObjectPool<Quote> pool,
-                                          final GapMode gapMode,
-                                          final UpdateMode updateMode,
-                                          final UnreachableDepthMode unreachableDepthMode) {
-        this.unreachableDepthMode = unreachableDepthMode;
+        final int maxDepth = options.getMaxDepth().orElse(Defaults.MAX_DEPTH);
+        final int initialDepth = options.getInitialDepth().orElse(Math.min(Defaults.INITIAL_DEPTH, maxDepth));
         this.asks = L2MarketSide.factory(initialDepth, maxDepth, ASK);
         this.bids = L2MarketSide.factory(initialDepth, maxDepth, BID);
-        this.pool = pool;
-        this.gapMode = gapMode;
-        this.updateMode = updateMode;
-        this.exchanges = new MutableExchangeListImpl<>();
     }
 
-    public L2SingleExchangeQuoteProcessor(final long exchangeId,
-                                          final int initialDepth,
-                                          final int maxDepth,
+    public L2SingleExchangeQuoteProcessor(final OrderBookOptions options,
                                           final ObjectPool<Quote> pool,
-                                          final GapMode gapMode,
-                                          final UpdateMode updateMode,
-                                          final UnreachableDepthMode unreachableDepthMode) {
-        this(initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
+                                          @Alphanumeric final long exchangeId) {
+        this(options, pool);
         getOrCreateExchange(exchangeId);
     }
 
@@ -83,8 +73,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
     }
 
     @Override
-    public Quote processL2EntryNewInfo(final L2EntryNewInfo l2EntryNewInfo) {
-        final long exchangeId = l2EntryNewInfo.getExchangeId();
+    public Quote processL2EntryNew(final PackageHeaderInfo pck, final L2EntryNewInfo msg) {
+        final long exchangeId = msg.getExchangeId();
         final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
         if (!exchange.hasValue()) {
             // TODO Log warning!!
@@ -92,152 +82,196 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
             return null;
         }
 
-        if (exchange.get().getProcessor().isEmpty()) {
-            switch (updateMode) {
-                case WAITING_FOR_SNAPSHOT:
-                    return null; // Todo ADD null check!!
-                case NON_WAITING_FOR_SNAPSHOT:
-                    break;
-            }
+        if (exchange.get().getProcessor().isWaitingForSnapshot()) {
+            return null;
         }
 
-        final QuoteSide side = l2EntryNewInfo.getSide();
+        final QuoteSide side = msg.getSide();
         final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
-        final short level = l2EntryNewInfo.getLevel();
+        final int level = msg.getLevel();
 
-        if (level >= marketSide.getMaxDepth()) {
-            switch (unreachableDepthMode) {
-                case SKIP_AND_DROP:
-                    clear();
-                    return null;
-                case SKIP:
-                default:
-                    return null;
+        if (marketSide.isInvalidInsert(level, msg.getPrice(), msg.getSize(), exchangeId)) {
+            if (validationOptions.isQuoteInsert()) {
+                clear();
+                eventHandler.onBroken();
             }
-            // Unreachable quote level
-        }
-
-        // TODO: 6/30/2022 need to refactor return value
-        if (marketSide.isGap(level)) {
-            switch (gapMode) {
-                case FILL_GAP:
-                    checkAndFillGap(l2EntryNewInfo);
-                    return marketSide.getWorstQuote();
-                case SKIP_AND_DROP:
-                    clear();
-                    return null;
-                case SKIP:
-                default:
-                    return null;
-            }
+            return null;
         }
 
         final Quote quote;
-        if (level == marketSide.depth()) {// Add new worst quote
+        if (level == marketSide.depth()) { // Add new worst quote
             quote = pool.borrow();
         } else if (marketSide.isFull()) { // Check side is Full and remove Worst quote
             quote = marketSide.removeWorstQuote();
-            // Attention we remove worst quote bat not remove quote from multi exchange
         } else {
             quote = pool.borrow();
         }
-        mapNewL2ToQuote(l2EntryNewInfo, quote);
+        quote.copyFrom(pck, msg);
         marketSide.add(level, quote);
-
-//        System.out.printf("Insert: Quote %s to exchange by level %s \n", quote, level);// Add logger
-
         return quote;
     }
 
     @Override
-    public void processL2EntryUpdateInfo(final L2EntryUpdateInfo l2EntryUpdateInfo) {
-        final long exchangeId = l2EntryUpdateInfo.getExchangeId();
-        final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+    public boolean processL2EntryUpdate(final PackageHeaderInfo pck, final L2EntryUpdateInfo msg) {
+        final QuoteSide side = msg.getSide();
+        final int level = msg.getLevel();
+        @Alphanumeric final long exchangeId = msg.getExchangeId();
+        final BookUpdateAction action = msg.getAction();
+
+        final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getExchanges().getById(exchangeId);
         if (!exchange.hasValue()) {
             // TODO move to another palace
-            return;
+            return false;
         }
 
-        final QuoteSide side = l2EntryUpdateInfo.getSide();
-        final short level = l2EntryUpdateInfo.getLevel();
+        if (exchange.get().getProcessor().isWaitingForSnapshot()) {
+            return false;
+        }
 
         final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
-
-        if (!marketSide.hasLevel(level)) {
-            return;
+        if (marketSide.isInvalidUpdate(action, level, msg.getPrice(), msg.getSize(), exchangeId)) {
+            if (validationOptions.isQuoteUpdate()) {
+                clear();
+                eventHandler.onBroken();
+                return false;
+            }
+            return true; // skip invalid update
         }
 
-        final BookUpdateAction bookUpdateAction = l2EntryUpdateInfo.getAction();
-        if (bookUpdateAction == BookUpdateAction.DELETE) {
+        if (action == BookUpdateAction.DELETE) {
             final Quote remove = marketSide.remove(level);
             pool.release(remove);
-//            System.out.printf("Remove: Quote %s from exchange by level %s\n", remove, level); // TODO add logger
-        } else if (bookUpdateAction == BookUpdateAction.UPDATE) {
+        } else if (action == BookUpdateAction.UPDATE) {
             final Quote quote = marketSide.getQuote(level);
-            mapUpdateL2ToQuote(l2EntryUpdateInfo, quote);
-//            System.out.printf("Update: Quote %s from exchange by level %s\n", quote, level); // TODO add logger
+            quote.copyFrom(pck, msg);
         }
+        return true;
     }
 
     @Override
-    // TODO add validation for exchange id
-    public void processL2VendorSnapshot(final PackageHeaderInfo marketMessageInfo) {
-        final ObjectList<BaseEntryInfo> entries = marketMessageInfo.getEntries();
-        if (entries.size() < asks.depth() + bids.depth()) {
-            clear();
+    public boolean processL2Snapshot(final PackageHeaderInfo pck) {
+        if (!isSnapshotAllowed(pck)) {
+            return false;
         }
+
+        final ObjectList<BaseEntryInfo> entries = pck.getEntries();
+
+        final int prevAsksDepth = asks.depth();
+        final int prevBidsDepth = bids.depth();
 
         int askCnt = 0;
         int bidCnt = 0;
         for (int i = 0; i < entries.size(); i++) {
-            final BaseEntryInfo pck = entries.get(i);
-            final L2EntryNewInfo l2EntryNewInfo = (L2EntryNew) pck;
-            final short level = l2EntryNewInfo.getLevel();
-            final QuoteSide side = l2EntryNewInfo.getSide();
-            final long exchangeId = l2EntryNewInfo.getExchangeId();
+            final BaseEntryInfo e = entries.get(i);
+            if (e instanceof L2EntryNewInterface) {
+                final L2EntryNewInterface entry = (L2EntryNewInterface) e;
 
-            final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
-            if (!exchange.hasValue()) {
-                // TODO LOG warning
-                continue;
-            }
+//              //We expect that all entries are sorted by side and level
+//              if (entry == null || entry.getSide() == null ||
+//                      (entry.getSide() == ASK && askCnt != entry.getLevel()) ||
+//                      (entry.getSide() == BID && bidCnt != entry.getLevel())) {
+//                  clear();
+//                  eventHandler.onBroken();
+//                  return false;
+//              }
 
-            final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
+                final int level = entry.getLevel();
+                final QuoteSide side = entry.getSide();
+                @Alphanumeric final long exchangeId = entry.getExchangeId();
 
-            // Both side have the same max depth
-            final short maxDepth = marketSide.getMaxDepth();
-            if ((side == ASK && askCnt == maxDepth) || (side == BID && bidCnt == maxDepth)) {
-                continue;
-            }
+                // We expect that exchangeId is valid and all entries have the same exchangeId
+                final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+                if (!exchange.hasValue()) {
+                    clear();
+                    eventHandler.onBroken();
+                    return false;
+                }
 
-            if (marketSide.hasLevel(level)) {
-                final Quote quote = marketSide.getQuote(level);
-                mapNewL2ToQuote(l2EntryNewInfo, quote);
-            } else {
-                final Quote quote = pool.borrow();
-                mapNewL2ToQuote(l2EntryNewInfo, quote);
-                marketSide.add(level, quote);
-            }
+                final L2MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
 
-            if (side == ASK) {
-                askCnt++;
-            } else {
-                bidCnt++;
-            }
+                // Both side have the same max depth
+                final int maxDepth = marketSide.getMaxDepth();
+                if ((side == ASK && askCnt == maxDepth) || (side == BID && bidCnt == maxDepth)) {
+                    continue;
+                }
 
-            if (askCnt == maxDepth && bidCnt == maxDepth) {
-                return;
+                if (marketSide.hasLevel(level)) {
+                    final Quote quote = marketSide.getQuote(level);
+                    quote.copyFrom(pck, entry);
+                } else {
+                    final Quote quote = pool.borrow();
+                    quote.copyFrom(pck, entry);
+                    marketSide.add(level, quote);
+                }
+
+                if (side == ASK) {
+                    askCnt++;
+                } else {
+                    bidCnt++;
+                }
+
+                if (askCnt == maxDepth && bidCnt == maxDepth) {
+                    break;
+                }
             }
         }
-        asks.trim();
-        bids.trim();
-        notWaitingForSnapshot();
+
+        //Remove all worst quotes after snapshot.
+        //We're doing this because we don't release quotes during snapshot processing.
+        for (int i = askCnt; i < prevAsksDepth; i++) {
+            final Quote quote = asks.removeWorstQuote();
+            pool.release(quote);
+        }
+
+        for (int i = bidCnt; i < prevBidsDepth; i++) {
+            final Quote quote = bids.removeWorstQuote();
+            pool.release(quote);
+        }
+
+        //Validate state after snapshot
+        //We believe that snapshot is valid, but...
+        if (!asks.validateState() || !bids.validateState()) {
+            clear();
+            eventHandler.onBroken();
+            return false;
+        }
+
+        eventHandler.onSnapshot();
+        return true;
     }
 
     @Override
-    public void processBookResetEntry(final BookResetEntryInfo bookResetEntryInfo) {
-        clear();
-        waitingForSnapshot();
+    public boolean processBookResetEntry(final PackageHeaderInfo pck, final BookResetEntryInfo msg) {
+        @Alphanumeric final long exchangeId = msg.getExchangeId();
+        final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+
+        if (exchange.hasValue()) {
+            clear();
+            eventHandler.onReset();
+            return true;
+        } else {
+            // TODO LOG warning
+            return false;
+        }
+    }
+
+    @Override
+    public boolean processSecurityFeedStatus(final SecurityFeedStatusMessage msg) {
+        if (msg.getStatus() == FeedStatus.NOT_AVAILABLE) {
+            if (disconnectMode == DisconnectMode.CLEAR_EXCHANGE) {
+                @Alphanumeric final long exchangeId = msg.getExchangeId();
+                final Option<MutableExchange<Quote, L2Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+                if (exchange.hasValue()) {
+                    clear();
+                    eventHandler.onDisconnect();
+                    return true;
+                }
+//                else {
+//                    //TODO LOG warning
+//                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -252,16 +286,8 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
 
     @Override
     public void clear() {
-        for (int i = 0; i < asks.depth(); i++) {
-            final Quote release = asks.getQuote(i);
-            pool.release(release);
-        }
-        asks.clear();
-        for (int i = 0; i < bids.depth(); i++) {
-            final Quote release = bids.getQuote(i);
-            pool.release(release);
-        }
-        bids.clear();
+        releaseAndClean(asks);
+        releaseAndClean(bids);
     }
 
     @Override
@@ -269,41 +295,51 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
         return asks.isEmpty() && bids.isEmpty();
     }
 
+    /**
+     * Check if snapshot is available for processing.
+     *
+     * @param msg - snapshot message
+     * @return true if snapshot is available for processing
+     */
+    @Override
+    public boolean isSnapshotAllowed(final PackageHeaderInfo msg) {
+        final PackageType type = msg.getPackageType();
+        return eventHandler.isSnapshotAllowed(type);
+    }
+
     @Override
     public boolean isWaitingForSnapshot() {
-        return isWaitingForSnapshot;
+        return eventHandler.isWaitingForSnapshot();
     }
 
-    private void waitingForSnapshot() {
-        if (!isWaitingForSnapshot()) {
-            isWaitingForSnapshot = true;
+    private void releaseAndClean(final L2MarketSide<Quote> side) {
+        if (side.isEmpty()) {
+            return;
         }
-    }
-
-    private void notWaitingForSnapshot() {
-        if (isWaitingForSnapshot()) {
-            isWaitingForSnapshot = false;
+        for (int i = 0; i < side.depth(); i++) {
+            final Quote quote = side.getQuote(i);
+            pool.release(quote);
         }
+        side.clear();
     }
 
-    private void checkAndFillGap(final L2EntryNewInfo l2) {
-        final short depth = l2.getLevel();
-        final L2MarketSide<Quote> marketSide = getMarketSide(l2.getSide());
-        final int gaps = depth - marketSide.depth();
-
-        // If we have a gap between the last existing level and currently inserted level (empty levels between them),
-        // then let's fill these empty levels with values from the current event.
-        if (gaps > 0) {
-            Quote quote;
-            final short maxDepth = marketSide.getMaxDepth();
-            for (int i = 0; i < gaps && marketSide.depth() < maxDepth; i++) {
-                quote = pool.borrow();
-                mapNewL2ToQuote(l2, quote);
-                marketSide.addLast(quote);
-            }
-            marketSide.trim();
-        }
-    }
+//    private void checkAndFillGap(final L2EntryNewInfo msg) {
+//        final int depth = msg.getLevel();
+//        final L2MarketSide<Quote> marketSide = getMarketSide(msg.getSide());
+//        final int gaps = depth - marketSide.depth();
+//
+//        // If we have a gap between the last existing level and currently inserted level (empty levels between them),
+//        // then let's fill these empty levels with values from the current event.
+//        if (gaps > 0) {
+//            Quote quote;
+//            final int maxDepth = marketSide.getMaxDepth();
+//            for (int i = 0; i < gaps && marketSide.depth() < maxDepth; i++) {
+//                quote = pool.borrow();
+//                quote.copyFrom(pck, msg);
+//                marketSide.addWorstQuote(quote);
+//            }
+//        }
+//    }
 
     /**
      * Get stock exchange holder by id(create new if it does not exist).
@@ -312,45 +348,18 @@ public class L2SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote>
      * @param exchangeId - id of exchange.
      * @return exchange book by id.
      */
-    private Option<MutableExchange<Quote, L2Processor<Quote>>> getOrCreateExchange(final long exchangeId) {
+    private Option<MutableExchange<Quote, L2Processor<Quote>>> getOrCreateExchange(@Alphanumeric final long exchangeId) {
+        if (!AlphanumericUtils.isValidAlphanumeric(exchangeId) || TypeConstants.EXCHANGE_NULL == exchangeId) {
+            //TODO LOG warning
+            return Option.empty();
+        }
+
         if (!exchanges.isEmpty()) {
             return exchanges.getById(exchangeId);
         }
-        final MutableExchangeImpl<Quote, L2Processor<Quote>> exchange = new MutableExchangeImpl<>(exchangeId, this);
+        final MutableExchange<Quote, L2Processor<Quote>> exchange = new MutableExchangeImpl<>(exchangeId, this);
         exchanges.add(exchange);
         return exchanges.getById(exchangeId);
-    }
-
-    /**
-     * Update quote with L2EntryUpdate.
-     *
-     * @param quote             - order book quote entry
-     * @param l2EntryUpdateInfo - L2EntryUpdate
-     */
-    protected void mapUpdateL2ToQuote(final L2EntryUpdateInfo l2EntryUpdateInfo, final Quote quote) {
-        quote.setSize(l2EntryUpdateInfo.getSize());
-        quote.setNumberOfOrders(l2EntryUpdateInfo.getNumberOfOrders());
-    }
-
-    /**
-     * Update quote with L2EntryNew.
-     *
-     * @param l2EntryNewInfo - L2EntryNew
-     * @param quote          - quote
-     */
-    protected void mapNewL2ToQuote(final L2EntryNewInfo l2EntryNewInfo, final Quote quote) {
-        if (quote.getSize() != l2EntryNewInfo.getSize()) {
-            quote.setSize(l2EntryNewInfo.getSize());
-        }
-        if (quote.getPrice() != l2EntryNewInfo.getPrice()) {
-            quote.setPrice(l2EntryNewInfo.getPrice());
-        }
-        if (quote.getExchangeId() != l2EntryNewInfo.getExchangeId()) {
-            quote.setExchangeId(l2EntryNewInfo.getExchangeId());
-        }
-        if (quote.getNumberOfOrders() != l2EntryNewInfo.getNumberOfOrders()) {
-            quote.setNumberOfOrders(l2EntryNewInfo.getNumberOfOrders());
-        }
     }
 
 }

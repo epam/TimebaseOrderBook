@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.timebase.messages.universal.*;
 import com.epam.deltix.util.collections.generated.ObjectList;
 
@@ -24,7 +25,7 @@ import com.epam.deltix.util.collections.generated.ObjectList;
  *
  * @author Andrii_Ostapenko
  */
-interface L2Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor {
+interface L2Processor<Quote> extends QuoteProcessor<Quote> {
 
     @Override
     default DataModelType getQuoteLevels() {
@@ -32,54 +33,64 @@ interface L2Processor<Quote> extends QuoteProcessor<Quote>, ResetEntryProcessor 
     }
 
     @Override
-    L2MarketSide<Quote> getMarketSide(final QuoteSide side);
+    L2MarketSide<Quote> getMarketSide(QuoteSide side);
 
     @Override
     MutableExchangeList<MutableExchange<Quote, L2Processor<Quote>>> getExchanges();
 
     /**
-     * This type reports incremental Level2-new: insert  one line in Order Book either on ask or bid side.
+     * This type reports incremental Level2-new: insert one line in Order Book either on ask or bid side.
      *
-     * @param l2EntryNewInfo - Level2-new entry
+     * @param pck
+     * @param msg - Level2-new entry
      * @return insert quote
      */
-    Quote processL2EntryNewInfo(final L2EntryNewInfo l2EntryNewInfo);
+    Quote processL2EntryNew(PackageHeaderInfo pck, L2EntryNewInfo msg);
 
     /**
      * This type reports incremental Level2-update: update or delete one line in Order Book either on ask or bid side.
      *
-     * @param l2EntryUpdateInfo - Level2-update
+     * @param pck
+     * @param msg - Level2-update
+     * @return true if quote was updated, false if quote was not found
      */
-    void processL2EntryUpdateInfo(final L2EntryUpdateInfo l2EntryUpdateInfo);
+    boolean processL2EntryUpdate(PackageHeaderInfo pck, L2EntryUpdateInfo msg);
 
-    void processL2VendorSnapshot(final PackageHeaderInfo marketMessageInfo);
+    boolean processL2Snapshot(PackageHeaderInfo msg);
 
-    default boolean process(final BaseEntryInfo pck) {
-        if (pck instanceof L2EntryNew) {
-            final L2EntryNew l2EntryNewInfo = (L2EntryNew) pck;
-                processL2EntryNewInfo(l2EntryNewInfo);
-            return true;
-        } else if (pck instanceof L2EntryUpdate) {
-            final L2EntryUpdate l2EntryUpdateInfo = (L2EntryUpdate) pck;
-            processL2EntryUpdateInfo(l2EntryUpdateInfo);
+    boolean isWaitingForSnapshot();
+
+    boolean isSnapshotAllowed(PackageHeaderInfo msg);
+
+    default boolean processIncrementalUpdate(PackageHeaderInfo pck, final BaseEntryInfo entryInfo) {
+        if (entryInfo instanceof L2EntryNew) {
+            final L2EntryNew entry = (L2EntryNew) entryInfo;
+            return processL2EntryNew(pck, entry) != null;
+        } else if (entryInfo instanceof L2EntryUpdate) {
+            final L2EntryUpdate entry = (L2EntryUpdate) entryInfo;
+            return processL2EntryUpdate(pck, entry);
+        } else if (entryInfo instanceof StatisticsEntry) {
             return true;
         }
         return false;
     }
 
-    default boolean processSnapshot(final PackageHeaderInfo marketMessageInfo) {
-        final ObjectList<BaseEntryInfo> entries = marketMessageInfo.getEntries();
-        final BaseEntryInfo baseEntryInfo = entries.get(0);
-        if (baseEntryInfo instanceof L2EntryNewInfo) {
-            processL2VendorSnapshot(marketMessageInfo);
-            return true;
-        } else if (baseEntryInfo instanceof BookResetEntryInfo) {
-            final BookResetEntryInfo resetEntryInfo = (BookResetEntryInfo) baseEntryInfo;
-            if (resetEntryInfo.getModelType() == getQuoteLevels()) {
-                processBookResetEntry(resetEntryInfo);
-                return true;
+    default boolean processSnapshot(final PackageHeaderInfo msg) {
+        final ObjectList<BaseEntryInfo> entries = msg.getEntries();
+        final int n = entries.size();
+        // skip statistic entries try to establish if we are dealing with order book reset or normal snapshot
+        for (int i = 0; i < n; i++) {
+            final BaseEntryInfo entry = entries.get(i);
+            if (entry instanceof L2EntryNewInfo) {
+                return processL2Snapshot(msg);
+            } else if (entry instanceof BookResetEntryInfo) {
+                final BookResetEntryInfo resetEntry = (BookResetEntryInfo) entry;
+                if (resetEntry.getModelType() == getQuoteLevels()) {
+                    return processBookResetEntry(msg, resetEntry);
+                }
             }
         }
         return false;
     }
+
 }

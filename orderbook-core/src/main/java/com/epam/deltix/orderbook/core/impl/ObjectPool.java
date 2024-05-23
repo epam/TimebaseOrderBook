@@ -17,19 +17,30 @@
 package com.epam.deltix.orderbook.core.impl;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * Never-shrinking version of ObjectPool. Not thread safe
  */
-public final class ObjectPool<T extends MutableOrderBookQuote> {
+public final class ObjectPool<T> {
 
     private final Supplier<T> factory;
-
+    private final Consumer<T> releaseCallback;
     private Object[] array;
     private int size;
 
+    //TODO add javadoc
     public ObjectPool(final int initialSize, final Supplier<T> factory) {
+        this(initialSize, factory, null);
+    }
+
+    public ObjectPool(final int initialSize, final Supplier<T> factory, final Consumer<T> releaseCallback) {
+        if (initialSize < 0) {
+            throw new IllegalArgumentException("Illegal size: " + initialSize);
+        }
+        this.releaseCallback = releaseCallback;
+
         final Object[] array = new Object[(initialSize == 0) ? 1 : initialSize];
 
         for (int i = 0; i < initialSize; i++) {
@@ -45,14 +56,15 @@ public final class ObjectPool<T extends MutableOrderBookQuote> {
 
     @SuppressWarnings("unchecked")
     public T borrow() {
-        final Object item;
         if (size > 0) {
-            item = array[--size];
+            final int last = --size;
+            final Object item = array[last];
+            array[last] = null; // clear reference to borrowed item
+            assert item != null;
+            return (T) item;
         } else {
-            item = factory.get();
+            return factory.get();
         }
-        assert item != null;
-        return (T) item;
     }
 
     public void release(final T item) {
@@ -62,8 +74,10 @@ public final class ObjectPool<T extends MutableOrderBookQuote> {
             }
 
             array[size++] = item;
-            // TODO why in this place???
-            item.release();
+
+            if (releaseCallback != null) {
+                releaseCallback.accept(item);
+            }
         }
     }
 
@@ -74,7 +88,7 @@ public final class ObjectPool<T extends MutableOrderBookQuote> {
     /**
      * Clear all entries and release all cached objects to Java Garbage Collector
      */
-    public void clear() {
+    private void clear() {
         Arrays.fill(array, 0, size, null);
         size = 0;
     }

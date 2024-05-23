@@ -61,7 +61,10 @@ public class OrderBook_03_ConsolidatedOrderBook extends AbstractSample {
 
         final OrderBook<OrderBookQuote> orderBook = OrderBookFactory.create(opt);
 
-        System.out.println("Hello! I'm " + orderBook.getDescription() + " for stock symbol: " + orderBook.getSymbol().get() + "!");
+        System.out.println("Hello! I'm " +
+                orderBook.getDescription() +
+                " for stock symbol: " +
+                orderBook.getSymbol().get() + "!");
 
         // Step 2: feed it with updates
         for (final long exchangeId : exchangeIds) {

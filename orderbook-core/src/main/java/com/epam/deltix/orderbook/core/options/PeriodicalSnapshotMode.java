@@ -17,30 +17,28 @@
 package com.epam.deltix.orderbook.core.options;
 
 /**
- * An enumeration of possible values for configuring the unreachable(level more than max deep limit) level in stock quotes.
+ * An enumeration of possible values for setting the processing periodic snapshots mode.
  * <p>
- * Note: UnreachableDepthMode depends on max deep limit
- * Supported for L2
+ * Modes for processing periodic snapshots. What do we do with periodic snapshots?
  *
- * @author Andrii_Ostapenko1
- * @see BindOrderBookOptionsBuilder#maxDepth(int)
+ * @see deltix.timebase.api.messages.universal.PackageType#PERIODICAL_SNAPSHOT
  */
-// TODO ADD UNIT TEST!!
-public enum UnreachableDepthMode {
+public enum PeriodicalSnapshotMode {
 
     /**
-     * The operator ignores all unreachable levels in stock quotes.
-     * <p>
-     * If we have a level more than available level, then let's skip quote.
+     * Skip all periodic snapshots.
      */
-    SKIP,
+    SKIP_ALL,
 
     /**
-     * The operator drop all quotes for stock exchange.
-     * <p>
-     * If we have a level more than available level,
-     * then let's skip quote and drop all quote for stock exchange.
+     * Processing of all periodic snapshots.
      */
-    SKIP_AND_DROP,
+    PROCESS_ALL,
 
+    /**
+     * Processing a periodic snapshot only once when the order book is waiting for a snapshot.
+     *
+     * @see deltix.orderbook.core.options.UpdateMode#WAITING_FOR_SNAPSHOT
+     */
+    ONLY_ONE,
 }

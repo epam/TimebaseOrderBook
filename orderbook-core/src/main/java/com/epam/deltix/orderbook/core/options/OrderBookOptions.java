@@ -16,6 +16,10 @@
  */
 package com.epam.deltix.orderbook.core.options;
 
+
+import com.epam.deltix.orderbook.core.api.ErrorListener;
+import com.epam.deltix.orderbook.core.api.OrderBookQuote;
+import com.epam.deltix.orderbook.core.impl.ObjectPool;
 import com.epam.deltix.timebase.messages.universal.DataModelType;
 
 /**
@@ -33,6 +37,13 @@ public interface OrderBookOptions {
     Option<UpdateMode> getUpdateMode();
 
     /**
+     * Periodical snapshot mode.
+     *
+     * @return periodical snapshot mode.
+     */
+    Option<PeriodicalSnapshotMode> getPeriodicalSnapshotMode();
+
+    /**
      * Stock symbol.
      *
      * @return stock symbol.
@@ -47,18 +58,18 @@ public interface OrderBookOptions {
     Option<DataModelType> getQuoteLevels();
 
     /**
+     * Should store quote timestamps.
+     *
+     * @return flag.
+     */
+    Option<Boolean> shouldStoreQuoteTimestamps();
+
+    /**
      * Order book type.
      *
      * @return order book mode.
      */
     Option<OrderBookType> getBookType();
-
-    /**
-     * Stock quote gap mode.
-     *
-     * @return gap mode.
-     */
-    Option<GapMode> getGapMode();
 
     /**
      * Initial depth of market.
@@ -75,11 +86,11 @@ public interface OrderBookOptions {
     Option<Integer> getMaxDepth();
 
     /**
-     * Stock quote unreachableDepth mode.
+     * Invalid quote mode.
      *
      * @return unreachableDepth mode.
      */
-    Option<UnreachableDepthMode> getUnreachableDepthMode();
+    Option<ValidationOptions> getInvalidQuoteMode();
 
     /**
      * Initial pool size for stock exchanges.
@@ -87,4 +98,34 @@ public interface OrderBookOptions {
      * @return pool size.
      */
     Option<Integer> getInitialExchangesPoolSize();
+
+    /**
+     * How order book will react on disconnect market data event.
+     *
+     * @return disconnectBehaviour.
+     */
+    Option<DisconnectMode> getDisconnectMode();
+
+    /**
+     * How order book will processing increment update after reset market data event
+     *
+     * @return resetMode
+     */
+    Option<ResetMode> getResetMode();
+
+    //TODO add javadoc
+    Option<ErrorListener> getErrorListener();
+
+    //TODO add javadoc
+    Option<Integer> getInitialSharedQuotePoolSize();
+
+    //TODO add javadoc
+    Option<ObjectPool<? extends OrderBookQuote>> getSharedObjectPool();
+
+    /**
+     * Whether compact version of L2 order book is used
+     *
+     * @return flag
+     */
+    Option<Boolean> isCompactVersion();
 }

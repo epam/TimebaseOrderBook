@@ -18,6 +18,7 @@ package com.epam.deltix.orderbook.core;
 
 import com.epam.deltix.dfp.Decimal;
 import com.epam.deltix.dfp.Decimal64Utils;
+
 import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.api.OrderBookFactory;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
@@ -67,9 +68,10 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
                     bbo,
                     QuoteSide.ASK,
                     (short) level,
-                    Decimal64Utils.fromDouble(bbo + level - 0.5),
-                    Decimal64Utils.fromDouble(size),
-                    numberOfOrders));
+                    bbo + level,
+                    size + level,
+                    numberOfOrders,
+                    true));
         }
         final List<Arguments> bids = new ArrayList<>(maxDepth);
         for (int level = 0; level < maxDepth; level++) {
@@ -77,9 +79,10 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
                     bbo,
                     QuoteSide.BID,
                     (short) level,
-                    Decimal64Utils.fromDouble(bbo - level + 0.5),
-                    Decimal64Utils.fromDouble(size),
-                    numberOfOrders));
+                    bbo - level,
+                    size + level,
+                    numberOfOrders,
+                    false));
         }
         return Stream.concat(asks.stream(), bids.stream());
     }
@@ -102,13 +105,15 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
                                                  final int bbo,
                                                  final QuoteSide side,
                                                  final short priceLevel,
-                                                 @Decimal final long price,
-                                                 @Decimal final long size,
-                                                 final long numOfOrders) {
-        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders);
+                                                 final long price,
+                                                 final long size,
+                                                 final long numOfOrders,
+                                                 final boolean addStatistics) {
+        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders, addStatistics);
         simulateL2Insert(COINBASE, side, priceLevel, price, size, numOfOrders);
 
-        assertBookSize(side, maxExchangeDepth);
+        final long expectedDepth = maxExchangeDepth + 1;
+        assertBookSize(side, (int) expectedDepth);
         assertEqualLevel(side, priceLevel, price, size, numOfOrders);
     }
 
@@ -119,10 +124,11 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
                                                  final int bbo,
                                                  final QuoteSide side,
                                                  final short priceLevel,
-                                                 @Decimal final long price,
-                                                 @Decimal final long size,
-                                                 final long numOfOrders) {
-        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders);
+                                                 final long price,
+                                                 final long size,
+                                                 final long numOfOrders,
+                                                 final boolean addStatistics) {
+        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numOfOrders, addStatistics);
         simulateL2Delete(side, priceLevel, price, size, numOfOrders);
 
         assertBookSize(side, maxExchangeDepth - 1);
@@ -136,16 +142,18 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
                                                  final int bbo,
                                                  final QuoteSide side,
                                                  final short priceLevel,
-                                                 @Decimal final long price,
-                                                 @Decimal final long size,
-                                                 final long numberOfOrders) {
-        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders);
+                                                 final long price,
+                                                 final long size,
+                                                 final long numberOfOrders,
+                                                 final boolean addStatistics) {
+        simulateL2QuoteSnapshot(VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
 
         @Decimal final long updateSize = Decimal64Utils.add(size, Decimal64Utils.TWO);
         final long updateNumberOfOrders = numberOfOrders + 1;
 
         simulateL2Update(side, priceLevel, price, updateSize, updateNumberOfOrders);
 
+        assertEqualLevel(side, priceLevel, price, updateSize, updateNumberOfOrders);
         assertBookSize(side, maxExchangeDepth);
         assertSize(side, priceLevel, updateSize);
         assertNumberOfOrders(side, priceLevel, updateNumberOfOrders);
@@ -156,14 +164,39 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
             mode = EnumSource.Mode.INCLUDE,
             names = {"VENDOR_SNAPSHOT", "PERIODICAL_SNAPSHOT"})
     public void snapshot_L2Quote(final PackageType packageType) {
-        final int maxDepth = 10;
+        int maxDepth = 10;
         final int bbo = 25;
         final int size = 5;
         final int numOfOrders = 25;
 
-        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders);
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, true);
         assertBookSize(QuoteSide.BID, maxDepth);
         assertBookSize(QuoteSide.ASK, maxDepth);
+
+        maxDepth = maxDepth - 4;
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, false);
+        assertBookSize(QuoteSide.BID, maxDepth);
+        assertBookSize(QuoteSide.ASK, maxDepth);
+
+        maxDepth = maxDepth + 4;
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, true);
+        assertBookSize(QuoteSide.BID, maxDepth);
+        assertBookSize(QuoteSide.ASK, maxDepth);
+
+        for (int i = 1; i < 10; i++) {
+            maxDepth = i;
+            simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, false);
+            assertBookSize(QuoteSide.BID, maxDepth);
+            assertBookSize(QuoteSide.ASK, maxDepth);
+        }
+
+        for (int i = 9; i >= 1; i--) {
+            maxDepth = i;
+            simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, true);
+            assertBookSize(QuoteSide.BID, maxDepth);
+            assertBookSize(QuoteSide.ASK, maxDepth);
+        }
+
     }
 
     @ParameterizedTest
@@ -176,8 +209,8 @@ public class L2SingleExchangeOrderBookTest extends AbstractL2QuoteLevelTest {
         final int size = 5;
         final int numberOfOrders = 25;
 
-        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
-        simulateResetEntry(packageType, COINBASE);
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders, true);
+        simulateResetEntry(COINBASE, packageType);
 
         assertBookSize(QuoteSide.BID, 0);
         assertBookSize(QuoteSide.ASK, 0);

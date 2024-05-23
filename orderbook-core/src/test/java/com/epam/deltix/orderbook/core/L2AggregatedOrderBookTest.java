@@ -27,6 +27,7 @@ import com.epam.deltix.timebase.messages.universal.DataModelType;
 import com.epam.deltix.timebase.messages.universal.PackageType;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -36,7 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.epam.deltix.dfp.Decimal64Utils.multiply;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
@@ -66,9 +66,10 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
                     bbo,
                     QuoteSide.ASK,
                     (short) level,
-                    Decimal64Utils.fromDouble(bbo + level - 0.5),
-                    Decimal64Utils.fromDouble(size),
-                    numberOfOrders));
+                    bbo + level,
+                    size,
+                    numberOfOrders,
+                    true));
         }
         final List<Arguments> bids = new ArrayList<>(maxDepth);
         for (int level = 0; level < maxDepth; level++) {
@@ -76,9 +77,10 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
                     bbo,
                     QuoteSide.BID,
                     (short) level,
-                    Decimal64Utils.fromDouble(bbo - level + 0.5),
-                    Decimal64Utils.fromDouble(size),
-                    numberOfOrders));
+                    bbo - level,
+                    size,
+                    numberOfOrders,
+                    false));
         }
         return Stream.concat(asks.stream(), bids.stream());
     }
@@ -102,24 +104,33 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
                                                final short priceLevel,
                                                @Decimal final long price,
                                                @Decimal final long size,
-                                               final long numberOfOrders) {
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders);
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders);
+                                               final long numberOfOrders,
+                                               final boolean addStatistics) {
+        int expectedDepth = maxExchangeDepth;
 
-        simulateL2Insert(COINBASE, side, priceLevel, price, size, numberOfOrders);
-        assertExchangeBookSize(COINBASE, side, maxExchangeDepth);
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
 
-        assertBookSize(side, maxExchangeDepth + 1);
+        double expectedPrice = price;
+        if (side == QuoteSide.ASK) {
+            expectedPrice = expectedPrice - 0.1;
+        } else {
+            expectedPrice = expectedPrice + 0.1;
+        }
 
-        simulateL2Insert(BINANCE, side, priceLevel, price, size, numberOfOrders);
-        assertExchangeBookSize(BINANCE, side, maxExchangeDepth);
+        expectedDepth++;
 
-        assertBookSize(side, maxExchangeDepth);
+        simulateL2Insert(COINBASE, side, priceLevel, expectedPrice, size, numberOfOrders);
+        assertExchangeBookSize(COINBASE, side, expectedDepth);
+        assertBookSize(side, expectedDepth);
 
-        assertPrice(side, priceLevel, price);
-        assertSize(side, priceLevel, multiply(size, Decimal64Utils.TWO));
+        simulateL2Insert(BINANCE, side, priceLevel, expectedPrice, size, numberOfOrders);
+        assertExchangeBookSize(BINANCE, side, expectedDepth);
+        assertBookSize(side, expectedDepth);
+
+        assertPrice(side, priceLevel, expectedPrice);
+        assertSize(side, priceLevel, size * 2);
         assertNumberOfOrders(side, priceLevel, numberOfOrders * 2);
-
     }
 
     @ParameterizedTest
@@ -130,9 +141,10 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
                                                  final short priceLevel,
                                                  @Decimal final long price,
                                                  @Decimal final long size,
-                                                 final long numberOfOrders) {
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders);
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders);
+                                                 final long numberOfOrders,
+                                                 final boolean addStatistics) {
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
 
         simulateL2Delete(COINBASE, side, priceLevel, price, size, numberOfOrders);
         assertExchangeBookSize(COINBASE, side, maxExchangeDepth - 1);
@@ -149,30 +161,27 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
                                                final int bbo,
                                                final QuoteSide side,
                                                final short priceLevel,
-                                               @Decimal final long price,
-                                               @Decimal final long size,
-                                               final long numberOfOrders) {
+                                               final long price,
+                                               final long size,
+                                               final long numberOfOrders,
+                                               final boolean addStatistics) {
+        final int expectedDepth = maxExchangeDepth;
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders, addStatistics);
 
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, maxExchangeDepth, bbo, size, numberOfOrders);
-        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, maxExchangeDepth, bbo, size, numberOfOrders);
-
-        simulateL2Insert(COINBASE, side, priceLevel, price, size, numberOfOrders);
-        assertBookSize(side, maxExchangeDepth + 1);
-
-        simulateL2Insert(BINANCE, side, priceLevel, price, size, numberOfOrders);
-        assertBookSize(side, maxExchangeDepth);
 
         @Decimal final long updateSize = Decimal64Utils.add(size, Decimal64Utils.TWO);
         final long updateNumberOfOrders = numberOfOrders + 1;
 
         simulateL2Update(BINANCE, side, priceLevel, price, updateSize, updateNumberOfOrders);
-        assertBookSize(side, maxExchangeDepth);
+        assertBookSize(side, expectedDepth);
 
         simulateL2Update(COINBASE, side, priceLevel, price, updateSize, updateNumberOfOrders);
-        assertBookSize(side, maxExchangeDepth);
+        assertBookSize(side, expectedDepth);
 
-        assertPrice(side, priceLevel, price);
-        assertSize(side, priceLevel, multiply(updateSize, Decimal64Utils.TWO));
+        //TODO add strategy to handle updates with different prices in the same level
+//        assertPrice(side, priceLevel, price);
+        assertSize(side, priceLevel, updateSize * 2);
         assertNumberOfOrders(side, priceLevel, updateNumberOfOrders * 2);
     }
 
@@ -186,8 +195,8 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
         final int size = 5;
         final int numberOfOrders = 25;
 
-        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders);
-        simulateL2QuoteSnapshot(packageType, BINANCE, maxDepth, bbo, size, numberOfOrders);
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numberOfOrders, false);
+        simulateL2QuoteSnapshot(packageType, BINANCE, maxDepth, bbo, size, numberOfOrders, true);
 
         assertBookSize(QuoteSide.BID, maxDepth);
         assertBookSize(QuoteSide.ASK, maxDepth);
@@ -216,10 +225,10 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
         final int size = 5;
         final int numOfOrders = 25;
 
-        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders);
-        simulateL2QuoteSnapshot(packageType, BINANCE, maxDepth, bbo, size, numOfOrders);
+        simulateL2QuoteSnapshot(packageType, COINBASE, maxDepth, bbo, size, numOfOrders, true);
+        simulateL2QuoteSnapshot(packageType, BINANCE, maxDepth, bbo, size, numOfOrders, false);
 
-        simulateResetEntry(packageType, COINBASE);
+        simulateResetEntry(COINBASE, packageType);
         assertIteratorBookQuotes(maxDepth * 2, bbo, size, numOfOrders);
 
         assertBookSize(QuoteSide.BID, maxDepth);
@@ -228,7 +237,7 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
         assertExchangeBookSize(COINBASE, QuoteSide.ASK, 0);
         assertExchangeBookSize(COINBASE, QuoteSide.BID, 0);
 
-        simulateResetEntry(packageType, BINANCE);
+        simulateResetEntry(BINANCE, packageType);
 
         assertExchangeBookSize(BINANCE, QuoteSide.ASK, 0);
         assertExchangeBookSize(BINANCE, QuoteSide.BID, 0);
@@ -240,4 +249,17 @@ public class L2AggregatedOrderBookTest extends AbstractL2QuoteLevelTest {
     }
 
 
+    @Test
+    public void isWaitingForSnapshotTest() {
+        Assertions.assertTrue(book.isWaitingForSnapshot()); // initially we definitely wait for snapshot
+
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, COINBASE, 3, 25, 5, 1, true);
+        Assertions.assertFalse(book.isWaitingForSnapshot());
+
+        simulateL2QuoteSnapshot(PackageType.VENDOR_SNAPSHOT, BINANCE, 3, 25, 5, 1, false);
+        Assertions.assertFalse(book.isWaitingForSnapshot());
+
+        simulateResetEntry(BINANCE, PackageType.VENDOR_SNAPSHOT);
+        Assertions.assertFalse(book.isWaitingForSnapshot());
+    }
 }

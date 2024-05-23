@@ -16,16 +16,14 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.dfp.Decimal;
-import com.epam.deltix.orderbook.core.options.GapMode;
-import com.epam.deltix.orderbook.core.options.UnreachableDepthMode;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.orderbook.core.options.OrderBookOptions;
 import com.epam.deltix.timebase.messages.TypeConstants;
 import com.epam.deltix.timebase.messages.universal.L2EntryUpdateInfo;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 
 import static com.epam.deltix.dfp.Decimal64Utils.*;
-
 
 /**
  * Implementation aggregated order book for L2 quote level.
@@ -34,14 +32,8 @@ import static com.epam.deltix.dfp.Decimal64Utils.*;
  */
 class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends AbstractL2MultiExchangeProcessor<Quote> {
 
-    L2AggregatedQuoteProcessor(final int initialExchangeCount,
-                               final int initialDepth,
-                               final int maxDepth,
-                               final ObjectPool<Quote> pool,
-                               final GapMode gapMode,
-                               final UpdateMode updateMode,
-                               final UnreachableDepthMode unreachableDepthMode) {
-        super(initialExchangeCount, initialDepth, maxDepth, pool, gapMode, updateMode, unreachableDepthMode);
+    L2AggregatedQuoteProcessor(final OrderBookOptions options, final ObjectPool<Quote> pool) {
+        super(options, pool);
     }
 
     @Override
@@ -50,11 +42,9 @@ class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends Ab
     }
 
     @Override
-    public void updateQuote(final Quote previous,
-                            final QuoteSide side,
-                            final L2EntryUpdateInfo update) {
+    public void updateQuote(final Quote previous, final QuoteSide side, final L2EntryUpdateInfo update) {
         final L2MarketSide<Quote> marketSide = getMarketSide(side);
-        final short level = marketSide.binarySearchLevelByPrice(previous);
+        final int level = marketSide.binarySearch(previous);
         if (level != L2MarketSide.NOT_FOUND) {
             final Quote quote = marketSide.getQuote(level);
             @Decimal final long size = add(subtract(quote.getSize(), previous.getSize()), update.getSize());
@@ -66,9 +56,8 @@ class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends Ab
     }
 
     @Override
-    public boolean removeQuote(final Quote remove,
-                               final L2MarketSide<Quote> marketSide) {
-        final short level = marketSide.binarySearchLevelByPrice(remove);
+    public boolean removeQuote(final Quote remove, final L2MarketSide<Quote> marketSide) {
+        final int level = marketSide.binarySearch(remove);
         if (level != L2MarketSide.NOT_FOUND) {
             final Quote quote = marketSide.getQuote(level);
 
@@ -89,7 +78,7 @@ class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends Ab
 
     @Override
     public Quote insertQuote(final Quote insert, final L2MarketSide<Quote> marketSide) {
-        final short level = marketSide.binarySearchNextLevelByPrice(insert);
+        final int level = marketSide.binarySearchNextLevelByPrice(insert);
         Quote quote;
         if (level != marketSide.depth()) {
             quote = marketSide.getQuote(level);
@@ -128,7 +117,7 @@ class L2AggregatedQuoteProcessor<Quote extends MutableOrderBookQuote> extends Ab
     }
 
     @Override
-    public L2Processor<Quote> clearExchange(final L2Processor<Quote> exchange) {
+    public L2Processor<Quote> unmapQuote(final L2Processor<Quote> exchange) {
         if (exchange.isEmpty()) {
             return exchange;
         }

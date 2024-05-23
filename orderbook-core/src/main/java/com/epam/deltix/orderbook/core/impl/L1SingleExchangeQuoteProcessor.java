@@ -16,10 +16,16 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.ExchangeList;
+import com.epam.deltix.orderbook.core.options.Defaults;
+import com.epam.deltix.orderbook.core.options.DisconnectMode;
 import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.orderbook.core.options.OrderBookOptions;
+import com.epam.deltix.timebase.messages.service.FeedStatus;
+import com.epam.deltix.timebase.messages.service.SecurityFeedStatusMessage;
 import com.epam.deltix.timebase.messages.universal.*;
+import com.epam.deltix.util.annotations.Alphanumeric;
 import com.epam.deltix.util.collections.generated.ObjectList;
 
 /**
@@ -27,26 +33,23 @@ import com.epam.deltix.util.collections.generated.ObjectList;
  */
 class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implements L1Processor<Quote> {
 
-    protected final L1MarketSide<Quote> bids;
-    protected final L1MarketSide<Quote> asks;
-
-    private final MutableExchangeList<MutableExchange<Quote, L1Processor<Quote>>> exchanges;
-
-    // Parameters
-    private final UpdateMode updateMode;
     private final ObjectPool<Quote> pool;
 
-    /**
-     * This parameter using for handle book reset entry.
-     *
-     * @see QuoteProcessor#isWaitingForSnapshot()
-     */
-    private boolean isWaitingForSnapshot = false;
+    protected final L1MarketSide<Quote> bids;
+    protected final L1MarketSide<Quote> asks;
+    private final MutableExchangeList<MutableExchange<Quote, L1Processor<Quote>>> exchanges;
 
-    L1SingleExchangeQuoteProcessor(final ObjectPool<Quote> pool,
-                                   final UpdateMode updateMode) {
+    private final EventHandler eventHandler;
+
+    // Parameters
+    private final DisconnectMode disconnectMode;
+
+    L1SingleExchangeQuoteProcessor(final OrderBookOptions options,
+                                   final ObjectPool<Quote> pool) {
         this.pool = pool;
-        this.updateMode = updateMode;
+        this.disconnectMode = options.getDisconnectMode().orElse(Defaults.DISCONNECT_MODE);
+        this.eventHandler = new EventHandlerImpl(options);
+
         this.asks = L1MarketSide.factory(QuoteSide.ASK);
         this.bids = L1MarketSide.factory(QuoteSide.BID);
         this.exchanges = new MutableExchangeListImpl<>();
@@ -74,8 +77,8 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
     }
 
     @Override
-    public Quote processL1EntryNewInfo(final L1EntryInfo l1EntryNewInfo) {
-        final long exchangeId = l1EntryNewInfo.getExchangeId();
+    public Quote processL1EntryNew(final PackageHeaderInfo pck, final L1EntryInfo msg) {
+        @Alphanumeric final long exchangeId = msg.getExchangeId();
         final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
         if (!exchange.hasValue()) {
             // TODO add null check
@@ -86,16 +89,7 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
             return null;
         }
 
-        if (exchange.get().getProcessor().isEmpty()) {
-            switch (updateMode) {
-                case WAITING_FOR_SNAPSHOT:
-                    return null; // Todo ADD null check!!
-                case NON_WAITING_FOR_SNAPSHOT:
-                    break;
-            }
-        }
-
-        final QuoteSide side = l1EntryNewInfo.getSide();
+        final QuoteSide side = msg.getSide();
         final L1MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
 
         final Quote quote;
@@ -105,24 +99,29 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
         } else {
             quote = marketSide.getBestQuote();
         }
-        updateByL1EntryNew(quote, l1EntryNewInfo);
+        quote.copyFrom(pck, msg);
         return quote;
     }
 
     @Override
     // TODO add validation for exchange id
-    public void processL1VendorSnapshot(final PackageHeaderInfo marketMessageInfo) {
-        final ObjectList<BaseEntryInfo> entries = marketMessageInfo.getEntries();
+    public boolean processL1Snapshot(final PackageHeaderInfo pck) {
+        if (!eventHandler.isSnapshotAllowed(pck.getPackageType())) {
+            return false;
+        }
+
+        // We expect that all entries are sorted by exchange id
+        final ObjectList<BaseEntryInfo> entries = pck.getEntries();
         for (int i = 0; i < entries.size(); i++) {
-            final BaseEntryInfo pck = entries.get(i);
-            final L1EntryInfo l1EntryInfo = (L1EntryInfo) pck;
-            final QuoteSide side = l1EntryInfo.getSide();
-            final long exchangeId = l1EntryInfo.getExchangeId();
+            final BaseEntryInfo entryInfo = entries.get(i);
+            final L1EntryInfo entry = (L1EntryInfo) entryInfo;
+            final QuoteSide side = entry.getSide();
+            @Alphanumeric final long exchangeId = entry.getExchangeId();
 
             final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
             if (!exchange.hasValue()) {
                 // TODO Log error and throw exception or add package validation
-                continue;
+                return false;
             }
 
             final L1MarketSide<Quote> marketSide = exchange.get().getProcessor().getMarketSide(side);
@@ -134,33 +133,46 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
             } else {
                 quote = marketSide.getBestQuote();
             }
-            updateByL1EntryNew(quote, l1EntryInfo);
+            quote.copyFrom(pck, entry);
         }
 
-        notWaitingForSnapshot();
+        eventHandler.onSnapshot();
+        return true;
     }
 
     @Override
     public boolean isWaitingForSnapshot() {
-        return isWaitingForSnapshot;
+        return eventHandler.isWaitingForSnapshot();
     }
 
-    private void waitingForSnapshot() {
-        if (!isWaitingForSnapshot()) {
-            isWaitingForSnapshot = true;
-        }
-    }
+    @Override
+    public boolean processBookResetEntry(final PackageHeaderInfo pck, final BookResetEntryInfo msg) {
+        @Alphanumeric final long exchangeId = msg.getExchangeId();
+        final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
 
-    private void notWaitingForSnapshot() {
-        if (isWaitingForSnapshot()) {
-            isWaitingForSnapshot = false;
+        if (exchange.hasValue()) {
+            clear();
+            eventHandler.onReset();
+            return true;
+        } else {
+            return false;
         }
     }
 
     @Override
-    public void processBookResetEntry(final BookResetEntryInfo bookResetEntryInfo) {
-        clear();
-        waitingForSnapshot();
+    public boolean processSecurityFeedStatus(final SecurityFeedStatusMessage msg) {
+        if (msg.getStatus() == FeedStatus.NOT_AVAILABLE) {
+            if (disconnectMode == DisconnectMode.CLEAR_EXCHANGE) {
+                @Alphanumeric final long exchangeId = msg.getExchangeId();
+                final Option<MutableExchange<Quote, L1Processor<Quote>>> exchange = getOrCreateExchange(exchangeId);
+                if (exchange.hasValue()) {
+                    clear();
+                    eventHandler.onDisconnect();
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -168,12 +180,12 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
         return exchanges;
     }
 
-    private void releaseAndClean(final L1MarketSide<Quote> marketSide) {
-        for (int i = 0; i < marketSide.depth(); i++) {
-            final Quote quote = marketSide.getQuote(i);
+    private void releaseAndClean(final L1MarketSide<Quote> side) {
+        for (int i = 0; i < side.depth(); i++) {
+            final Quote quote = side.getQuote(i);
             pool.release(quote);
         }
-        marketSide.clear();
+        side.clear();
     }
 
     /**
@@ -183,33 +195,13 @@ class L1SingleExchangeQuoteProcessor<Quote extends MutableOrderBookQuote> implem
      * @param exchangeId - id of exchange.
      * @return exchange book by id.
      */
-    private Option<MutableExchange<Quote, L1Processor<Quote>>> getOrCreateExchange(final long exchangeId) {
+    private Option<MutableExchange<Quote, L1Processor<Quote>>> getOrCreateExchange(@Alphanumeric final long exchangeId) {
         if (!exchanges.isEmpty()) {
             return exchanges.getById(exchangeId);
         }
-        final MutableExchangeImpl<Quote, L1Processor<Quote>> exchange = new MutableExchangeImpl<>(exchangeId, this);
+        final MutableExchange<Quote, L1Processor<Quote>> exchange = new MutableExchangeImpl<>(exchangeId, this);
         exchanges.add(exchange);
         return exchanges.getById(exchangeId);
     }
 
-    /**
-     * Update quote with L1EntryNew.
-     *
-     * @param l1EntryInfo - L1EntryNew
-     * @param quote       - type of quote
-     */
-    protected void updateByL1EntryNew(final Quote quote, final L1EntryInfo l1EntryInfo) {
-        if (quote.getSize() != l1EntryInfo.getSize()) {
-            quote.setSize(l1EntryInfo.getSize());
-        }
-        if (quote.getPrice() != l1EntryInfo.getPrice()) {
-            quote.setPrice(l1EntryInfo.getPrice());
-        }
-        if (quote.getExchangeId() != l1EntryInfo.getExchangeId()) {
-            quote.setExchangeId(l1EntryInfo.getExchangeId());
-        }
-        if (quote.getNumberOfOrders() != l1EntryInfo.getNumberOfOrders()) {
-            quote.setNumberOfOrders(l1EntryInfo.getNumberOfOrders());
-        }
-    }
 }

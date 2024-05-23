@@ -69,12 +69,17 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     }
 
     @Override
-    public boolean hasLevel(final short level) {
+    public boolean hasLevel(final int level) {
         return !isEmpty() && level == 0;
     }
 
     @Override
     public Quote getBestQuote() {
+        return quote;
+    }
+
+    @Override
+    public Quote getWorstQuote() {
         return quote;
     }
 
@@ -88,7 +93,7 @@ abstract class AbstractL1MarketSide<Quote extends OrderBookQuote> implements L1M
     }
 
     @Override
-    public Iterator<Quote> iterator(final short fromLevel, final short toLevel) {
+    public Iterator<Quote> iterator(final int fromLevel, final int toLevel) {
         itr.iterateBy(quote);
         return itr;
     }

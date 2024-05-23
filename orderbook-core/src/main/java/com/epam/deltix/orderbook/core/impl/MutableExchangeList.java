@@ -18,6 +18,7 @@ package com.epam.deltix.orderbook.core.impl;
 
 import com.epam.deltix.orderbook.core.api.ExchangeList;
 
+
 /**
  * ReadWrite interface for stock exchange list.
  *

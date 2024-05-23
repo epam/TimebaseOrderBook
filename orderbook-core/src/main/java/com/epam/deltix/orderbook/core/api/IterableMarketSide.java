@@ -37,6 +37,7 @@ public interface IterableMarketSide<Quote> extends Iterable<Quote> {
      *
      * @return an iterator over the elements in this market side in proper sequence
      */
+    @Override
     Iterator<Quote> iterator();
 
     /**
@@ -45,7 +46,7 @@ public interface IterableMarketSide<Quote> extends Iterable<Quote> {
      * @param fromLevel - Starting price level index to use
      * @return an iterator over the elements in this order book in proper sequence
      */
-    Iterator<Quote> iterator(short fromLevel);
+    Iterator<Quote> iterator(int fromLevel);
 
     /**
      * Returns an iterator over the elements in this market side in proper sequence.
@@ -54,7 +55,7 @@ public interface IterableMarketSide<Quote> extends Iterable<Quote> {
      * @param toLevel   - End price level index to use
      * @return an iterator over the elements in this order book in proper sequence
      */
-    Iterator<Quote> iterator(short fromLevel, short toLevel);
+    Iterator<Quote> iterator(int fromLevel, int toLevel);
 
     /**
      * Creates a new sequential or parallel {@code Stream} from a
@@ -89,13 +90,13 @@ public interface IterableMarketSide<Quote> extends Iterable<Quote> {
 
     void forEach(Predicate<Quote> action);
 
-    void forEach(short fromLevel, Predicate<Quote> action);
+    void forEach(int fromLevel, Predicate<Quote> action);
 
-    void forEach(short fromLevel, short toLevel, Predicate<Quote> action);
+    void forEach(int fromLevel, int toLevel, Predicate<Quote> action);
 
     <Cookie> void forEach(BiPredicate<Quote, Cookie> action, Cookie cookie);
 
-    <Cookie> void forEach(short fromLevel, BiPredicate<Quote, Cookie> action, Cookie cookie);
+    <Cookie> void forEach(int fromLevel, BiPredicate<Quote, Cookie> action, Cookie cookie);
 
-    <Cookie> void forEach(short fromLevel, short toLevel, BiPredicate<Quote, Cookie> action, Cookie cookie);
+    <Cookie> void forEach(int fromLevel, int toLevel, BiPredicate<Quote, Cookie> action, Cookie cookie);
 }

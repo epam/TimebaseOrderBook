@@ -16,9 +16,11 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.timebase.messages.MarketMessageInfo;
+import com.epam.deltix.timebase.messages.MessageInfo;
+import com.epam.deltix.timebase.messages.service.SecurityFeedStatusMessage;
 import com.epam.deltix.timebase.messages.universal.BaseEntryInfo;
 import com.epam.deltix.timebase.messages.universal.BookResetEntryInfo;
 import com.epam.deltix.timebase.messages.universal.PackageHeaderInfo;
@@ -29,7 +31,7 @@ import com.epam.deltix.timebase.messages.universal.PackageHeaderInfo;
 interface QuoteProcessor<Quote> extends OrderBook<Quote> {
 
     @Override
-    default boolean update(final MarketMessageInfo ignore) {
+    default boolean update(final MessageInfo ignore) {
         throw new UnsupportedOperationException("Unsupported for processor: " + getDescription());
     }
 
@@ -41,10 +43,11 @@ interface QuoteProcessor<Quote> extends OrderBook<Quote> {
     /**
      * Process incremental update market data entry.
      *
-     * @param pck - Package header container
+     * @param pck       - package header container
+     * @param entryInfo - base entry container
      * @return true if process is success
      */
-    boolean process(final BaseEntryInfo pck);
+    boolean processIncrementalUpdate(PackageHeaderInfo pck, BaseEntryInfo entryInfo);
 
     /**
      * Process only snapshot(VENDOR,PERIODICAL) market data entry.
@@ -52,15 +55,27 @@ interface QuoteProcessor<Quote> extends OrderBook<Quote> {
      * @param marketMessageInfo - Package header container
      * @return true if process is success
      */
-    boolean processSnapshot(final PackageHeaderInfo marketMessageInfo);
+    boolean processSnapshot(PackageHeaderInfo marketMessageInfo);
 
     /**
-     * Waiting snapshot don't apply incremental updates before it.
+     * Process security feed status msg.
      * <p>
-     * This method using for handle book reset entry.
+     * This msg is used to notify you about connecting to the exchange.
      *
-     * @return true if waiting for snapshot and return false if no waiting for snapshot
-     * @see ResetEntryProcessor#processBookResetEntry(BookResetEntryInfo)
+     * @param msg - Status feed container
+     * @return true if process is success
+     * @see SecurityFeedStatusMessage
      */
-    boolean isWaitingForSnapshot();
+    boolean processSecurityFeedStatus(SecurityFeedStatusMessage msg);
+
+    /**
+     * Book Reset is a Special type of entry that communicates that market data provider wants you to clear all entries
+     * in accumulated order book. Once you receive BookResetEntry you need to wait for the next Snapshot to
+     * rebuild order book (incremental update messages that may appear before the snapshot are invalid and should be ignored).
+     *
+     * @param resetEntry - Book reset entry
+     * @param pck - Package header
+     * @return true if process is success
+     */
+    boolean processBookResetEntry(PackageHeaderInfo pck, BookResetEntryInfo resetEntry);
 }

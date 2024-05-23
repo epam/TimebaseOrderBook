@@ -16,6 +16,7 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.MarketSide;
 import com.epam.deltix.timebase.messages.universal.QuoteSide;
 
@@ -36,6 +37,18 @@ interface L1MarketSide<Quote> extends MarketSide<Quote> {
             default:
                 throw new IllegalStateException("Unexpected value: " + side);
         }
+    }
+
+    @Override
+    default Quote getQuote(final CharSequence quoteId) {
+        // Not supported for L1
+        return null;
+    }
+
+    @Override
+    default boolean hasQuote(final CharSequence quoteId) {
+        // Not supported for L1
+        return false;
     }
 
     void insert(Quote insert);

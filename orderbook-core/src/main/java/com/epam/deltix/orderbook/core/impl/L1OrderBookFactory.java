@@ -16,10 +16,10 @@
  */
 package com.epam.deltix.orderbook.core.impl;
 
+
 import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
-import com.epam.deltix.orderbook.core.options.Option;
-import com.epam.deltix.orderbook.core.options.UpdateMode;
+import com.epam.deltix.orderbook.core.options.OrderBookOptions;
 
 /**
  * A factory that implements order book for Level1.
@@ -33,18 +33,26 @@ import com.epam.deltix.orderbook.core.options.UpdateMode;
 public class L1OrderBookFactory {
 
     /**
+     * Prevents instantiation
+     */
+    protected L1OrderBookFactory() {
+    }
+
+    /**
      * Creates OrderBook for single exchange market feed.
      *
-     * @param <Quote>    - type of quote
-     * @param symbol     - type of symbol
-     * @param updateMode - modes of order book work. Waiting first snapshot don't apply incremental updates before it or no.
+     * @param <Quote> - type of quote.
+     * @param options - to use.
      * @return order book
      */
-    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final Option<String> symbol, final UpdateMode updateMode) {
+    public static <Quote extends OrderBookQuote> OrderBook<Quote> newSingleExchangeBook(final OrderBookOptions options) {
         final int initialSize = 2;
-        final ObjectPool<MutableOrderBookQuote> pool = new ObjectPool<>(initialSize, MutableOrderBookQuoteImpl::new);
-        final QuoteProcessor<MutableOrderBookQuote> processor = new L1SingleExchangeQuoteProcessor<>(pool, updateMode);
-        return (OrderBook<Quote>) new OrderBookDecorator<>(symbol, processor);
+
+        final ObjectPool<? extends MutableOrderBookQuote> pool = (ObjectPool<? extends MutableOrderBookQuote>)
+                options.getSharedObjectPool().orElse(QuotePoolFactory.create(options, initialSize));
+
+        final QuoteProcessor<? extends MutableOrderBookQuote> processor = new L1SingleExchangeQuoteProcessor<>(options, pool);
+        return (OrderBook<Quote>) new OrderBookDecorator<>(options.getSymbol(), processor);
     }
 
 }

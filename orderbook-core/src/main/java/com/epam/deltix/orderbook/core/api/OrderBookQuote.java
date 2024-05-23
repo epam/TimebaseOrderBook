@@ -23,7 +23,7 @@ import com.epam.deltix.dfp.Decimal;
  *
  * @author Andrii_Ostapenko1
  */
-public interface OrderBookQuote {
+public interface OrderBookQuote extends OrderBookQuoteTimestamp {
 
     /**
      * Ask, Bid or Trade price.
@@ -82,5 +82,45 @@ public interface OrderBookQuote {
      * @return true if Size is not null
      */
     boolean hasSize();
+
+    /**
+     * Quote ID. In Forex market, for example, quote ID can be referenced in
+     * TradeOrders (to identify market maker's quote/rate we want to deal with).
+     * Each market maker usually keeps this ID unique per session per day. This
+     * is a alpha-numeric text field that can reach 64 characters or more,
+     * <p>
+     * Supported for L3 quote level
+     *
+     * @return Quote ID or null if not found
+     */
+    CharSequence getQuoteId();
+
+    /**
+     * Quote ID. In Forex market, for example, quote ID can be referenced in
+     * TradeOrders (to identify market maker's quote/rate we want to deal with).
+     * Each market maker usually keeps this ID unique per session per day. This
+     * is a alpha-numeric text field that can reach 64 characters or more,
+     * <p>
+     * Supported for L3 quote level
+     *
+     * @return true if Quote ID is not null
+     */
+    boolean hasQuoteId();
+
+    /**
+     * Id of participant (or broker ID).
+     * Supported for L3 quote level
+     *
+     * @return Participant or null if not found
+     */
+    CharSequence getParticipantId();
+
+    /**
+     * Id of participant (or broker ID).
+     * Supported for L3 quote level
+     *
+     * @return true if Participant is not null
+     */
+    boolean hasParticipantId();
 
 }

@@ -16,8 +16,7 @@
  */
 package com.epam.deltix.orderbook.core;
 
-import com.epam.deltix.dfp.Decimal;
-import com.epam.deltix.dfp.Decimal64Utils;
+
 import com.epam.deltix.orderbook.core.api.OrderBook;
 import com.epam.deltix.orderbook.core.api.OrderBookFactory;
 import com.epam.deltix.orderbook.core.api.OrderBookQuote;
@@ -36,6 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+
 
 import static com.epam.deltix.timebase.messages.universal.PackageType.VENDOR_SNAPSHOT;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -62,14 +62,14 @@ public class L1SingleExchangeOrderBookTest extends AbstractL1QuoteLevelTest {
         final List<Arguments> asks = new ArrayList<>(maxDepth);
         asks.add(arguments(bbo,
                 QuoteSide.ASK,
-                Decimal64Utils.fromDouble(bbo - 0.5),
-                Decimal64Utils.fromDouble(size),
+                bbo,
+                size,
                 numberOfOrders));
         final List<Arguments> bids = new ArrayList<>(maxDepth);
         bids.add(arguments(bbo,
                 QuoteSide.BID,
-                Decimal64Utils.fromDouble(bbo + 0.5),
-                Decimal64Utils.fromDouble(size),
+                bbo,
+                size,
                 numberOfOrders));
         return Stream.concat(asks.stream(), bids.stream());
     }
@@ -90,8 +90,8 @@ public class L1SingleExchangeOrderBookTest extends AbstractL1QuoteLevelTest {
     @DisplayName("Should add new quote in order book")
     public void incrementalUpdate_Insert_L1Quote(final int bbo,
                                                  final QuoteSide side,
-                                                 @Decimal final long price,
-                                                 @Decimal final long size,
+                                                 final long price,
+                                                 final long size,
                                                  final long numOfOrders) {
         simulateL1QuoteSnapshot(VENDOR_SNAPSHOT, bbo, size, numOfOrders);
         simulateL1Insert(side, price, size, numOfOrders);
@@ -125,7 +125,7 @@ public class L1SingleExchangeOrderBookTest extends AbstractL1QuoteLevelTest {
         final int numOfOrders = 25;
 
         simulateL1QuoteSnapshot(packageType, COINBASE, bbo, size, numOfOrders);
-        simulateResetEntry(packageType, COINBASE);
+        simulateResetEntry(COINBASE, packageType);
 
         assertBookSize(QuoteSide.BID, 0);
         assertBookSize(QuoteSide.ASK, 0);

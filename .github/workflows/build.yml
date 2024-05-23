@@ -40,6 +40,7 @@ jobs:
       - name: Setup java
         uses: actions/setup-java@v4
         with:
+          distribution: 'temurin'
           java-version: ${{ matrix.java }}
       - name: Build with gradle
         run: ./gradlew build

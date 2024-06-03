@@ -21,7 +21,7 @@ package com.epam.deltix.orderbook.core.options;
  * <p>
  * Modes for processing periodic snapshots. What do we do with periodic snapshots?
  *
- * @see deltix.timebase.api.messages.universal.PackageType#PERIODICAL_SNAPSHOT
+ * @see com.epam.deltix.timebase.messages.universal.PackageType#PERIODICAL_SNAPSHOT
  */
 public enum PeriodicalSnapshotMode {
 
@@ -38,7 +38,7 @@ public enum PeriodicalSnapshotMode {
     /**
      * Processing a periodic snapshot only once when the order book is waiting for a snapshot.
      *
-     * @see deltix.orderbook.core.options.UpdateMode#WAITING_FOR_SNAPSHOT
+     * @see com.epam.deltix.orderbook.core.options.UpdateMode#WAITING_FOR_SNAPSHOT
      */
     ONLY_ONE,
 }

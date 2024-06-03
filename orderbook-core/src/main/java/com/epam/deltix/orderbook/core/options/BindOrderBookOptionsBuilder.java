@@ -71,9 +71,9 @@ public interface BindOrderBookOptionsBuilder {
      * @param mode to use
      * @return builder
      * @see Defaults#PERIODICAL_SNAPSHOT_MODE
-     * @see com.epam.deltix.timebase.messages.universal.PackageType##PERIODICAL_SNAPSHOT
+     * @see com.epam.deltix.timebase.messages.universal.PackageType#PERIODICAL_SNAPSHOT
      */
-    BindOrderBookOptionsBuilder periodicalSnapshotMode(PeriodicalSnapshotMode mode);
+     BindOrderBookOptionsBuilder periodicalSnapshotMode(PeriodicalSnapshotMode mode);
 
     /**
      * Quote levels to use.
